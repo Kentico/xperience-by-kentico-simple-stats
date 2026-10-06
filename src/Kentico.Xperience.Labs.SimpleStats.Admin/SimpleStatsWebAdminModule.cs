@@ -13,6 +13,7 @@ using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.NewContacts;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.OrdersRevenue;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.RecipientLists;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.TopPages;
+using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.WebPageStats;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
 using Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 
@@ -75,6 +76,9 @@ internal sealed class SimpleStatsWebAdminModule : AdminModule
         services.TryAddTransient<IRecipientListsService, RecipientListsService>();
         services.TryAddTransient<IEmailSummaryRepository, EmailSummaryRepository>();
         services.TryAddTransient<IEmailSummaryService, EmailSummaryService>();
+        services.TryAddTransient<IWebPageStatsRepository, WebPageStatsRepository>();
+        services.TryAddTransient<IWebPageStatsService, WebPageStatsService>();
+        services.TryAddTransient<IStatsApplicationPermissionEvaluator, StatsApplicationPermissionEvaluator>();
         services.TryAddTransient<IStatsUserIdAccessor, StatsUserIdAccessor>();
         services.TryAddTransient<IStatsExportEventPublisher, StatsExportEventPublisher>();
     }

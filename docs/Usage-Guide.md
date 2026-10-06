@@ -45,6 +45,7 @@ Sections have no permission of their own. A section is hidden when the role has 
 | Consents             | `SimpleStats.Consents`         |
 | Email summary        | `SimpleStats.EmailSummary`     |
 | Recipient lists      | `SimpleStats.RecipientLists`   |
+| Web page stats       | `SimpleStats.WebPageStats`     |
 | Export               | `SimpleStats.Export`           |
 
 The **Export** permission only hides the buttons. The CSV is built in the browser from the data the report already shows, so a role that can see a report can still copy its numbers. It is not data protection.
@@ -73,6 +74,25 @@ Shows the 25 most visited page URLs in the range as a bar chart, largest on top.
 - **Export CSV** - downloads the list as a CSV file.
 
 Visits are grouped by the logged URL with the query string and fragment removed, so `/page?utm_source=x` counts as `/page`. Other differences (host, trailing slash, letter case) count as different pages.
+
+### Web page stats
+
+A **Stats** tab on each web page in website channels (after the page's other tabs). Shows contact activities logged for that page in the language being edited, as a stacked column chart per activity type.
+
+- **KPIs** - page visits, unique visitors (distinct contacts with a page visit), form submissions (with distinct submitters and their share of unique visitors), and total activities with the number of distinct contacts.
+- **Filters** - date range and grouping (no channel: the page belongs to one channel).
+- **Chart / table** - switch the tile to a table with the exact numbers.
+- **Export CSV** - downloads the table as a CSV file.
+
+Activities are matched by the web page they were logged for (`ActivityWebPageItemGUID`) and the language. Only counts are shown; no contact details.
+
+Form submission activities have no web page link or language, so they are matched by URL instead: the logged `ActivityURL` against the current live URL of the page variant (the channel home page is `/`, or `/{language}` for other languages), in the page's channel. The host, query string, fragment and a trailing slash are ignored; letter case follows the database collation (case-insensitive by default). Limits:
+
+- Submissions made under a former URL of the page (before it was moved or renamed) are not counted.
+- A page without a live URL (never published) shows no form submissions.
+- Channels with [language-specific domains](https://docs.kentico.com/documentation/developers-and-admins/configuration/website-channel-management#configure-language-specific-domains) use the same paths for all languages, so the URL host must also match: the domain and aliases configured for the edited language in `WebsiteChannelDomains:LanguageDomains` of the running environment (host and port, letter case ignored). If the language has no domain configured, the host is not checked and submissions of all languages on the same path are counted together; the tooltip says so.
+- Domains are read from the configuration of the environment that runs the admin. Activities logged under other hosts (for example production data copied to a local database) are not matched on language-domain channels.
+- Language prefix channels ignore the host, because the path already includes the language. The tab requires the **Web page stats** permission of **Simple Stats (Labs)** (not the **View** permission of the application) and is hidden on the channel root.
 
 ### New contacts
 

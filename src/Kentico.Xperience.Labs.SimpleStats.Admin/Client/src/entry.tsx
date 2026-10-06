@@ -12,6 +12,7 @@ import { OrdersRevenueTemplate as OrdersRevenue } from './orders-revenue/OrdersR
 import { RecipientListsTemplate as RecipientLists } from './recipient-lists/RecipientListsTemplate';
 import { withExportPermission } from './shared/exportPermission';
 import { TopPagesTemplate as TopPages } from './top-pages/TopPagesTemplate';
+import { WebPageStatsTemplate as WebPageStats } from './web-page-stats/WebPageStatsTemplate';
 
 // Report templates get the Export permission (`canExport`) for their "Export CSV" buttons.
 export const ActivityCountsTemplate = withExportPermission(ActivityCounts);
@@ -26,5 +27,6 @@ export const MembersTemplate = withExportPermission(Members);
 export const ConsentsTemplate = withExportPermission(Consents);
 export const EmailSummaryTemplate = withExportPermission(EmailSummary);
 export const RecipientListsTemplate = withExportPermission(RecipientLists);
+export const WebPageStatsTemplate = withExportPermission(WebPageStats);
 
 export { NoReportsTemplate } from './no-reports/NoReportsTemplate';

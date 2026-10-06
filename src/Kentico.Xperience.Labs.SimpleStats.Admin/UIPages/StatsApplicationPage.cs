@@ -33,6 +33,7 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 [UIPermission(StatsPermissions.CONSENTS, StatsPermissions.CONSENTS_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.EMAIL_SUMMARY, StatsPermissions.EMAIL_SUMMARY_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.RECIPIENT_LISTS, StatsPermissions.RECIPIENT_LISTS_DISPLAY_NAME)]
+[UIPermission(StatsPermissions.WEB_PAGE_STATS, StatsPermissions.WEB_PAGE_STATS_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.EXPORT, StatsPermissions.EXPORT_DISPLAY_NAME)]
 public sealed class StatsApplicationPage(IUIPermissionEvaluator permissionEvaluator) : ApplicationPage
 {

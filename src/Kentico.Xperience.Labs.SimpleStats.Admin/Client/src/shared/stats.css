@@ -30,6 +30,12 @@
   padding-bottom: var(--spacing-xxl);
 }
 
+/* Pages outside the app's section layout (for example the web page "Stats" tab) get no frame padding from the admin. */
+.SimpleStats-root--framed {
+  padding-top: var(--spacing-l);
+  padding-left: var(--spacing-xl);
+}
+
 .SimpleStats-filterBar {
   display: flex;
   flex-wrap: wrap;

@@ -45,6 +45,12 @@ public static class StatsPermissions
     public const string RECIPIENT_LISTS_DISPLAY_NAME = "Recipient lists";
 
     /// <summary>
+    /// Shows the "Stats" tab of web pages in website channels. Not tied to a page of this application.
+    /// </summary>
+    public const string WEB_PAGE_STATS = PREFIX + "WebPageStats";
+    public const string WEB_PAGE_STATS_DISPLAY_NAME = "Web page stats";
+
+    /// <summary>
     /// Shows "Export CSV" in all reports. Not tied to a report page.
     /// </summary>
     public const string EXPORT = PREFIX + "Export";
