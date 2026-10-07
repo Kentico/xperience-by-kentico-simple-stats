@@ -54,6 +54,48 @@ Design goals:
 - Items missing translations for a given language.
 - Reusable items with no usages. _Uncertain: not yet checked whether usage tracking data is easy to query._
 
+**Content management** (daily work of content marketers; researched 2026-10-06 against Kentico docs and local DB)
+
+Top picks: publishing calendar, forgotten edits, stale but popular, tag coverage, locked content.
+
+_Needs attention (current state)_
+
+- Publishing calendar: scheduled publish/unpublish in next 7/30 days per day; "overdue" items (scheduled time passed, not published). Source: `ContentItemLanguageMetadataScheduledPublishWhen` / `...ScheduledUnpublishWhen`. Spec: `.agent-resources/REPORT-13-PUBLISHING-CALENDAR.md` (includes ending soon).
+- Ending soon: scheduled unpublish in next N days (campaign content).
+- Locked content: locks per user, lock age, highlight old locks (helps admins decide on override). Source: `ContentItemLanguageMetadataLockedByUserID` / `LockedWhen` (content locking, 31.6). Spec: `.agent-resources/REPORT-14-CONTENT-LOCKS.md`.
+- Forgotten edits: published items with a newer draft unchanged > N days (live differs from edit); drafts and workflow items by last modifier (`ModifiedByUserID`). _Verify how `VersionStatus` separates a new draft of a published item from an initial draft._
+- Published content linking unpublished items: linked drafts show only in preview, so live content is missing parts. Source: `CMS_ContentItemReference` + status.
+
+_Publishing speed (date range)_
+
+- Published over time: first publishes vs updates per period, by type / kind / channel. Source: `ContentItemCommonDataFirstPublishedWhen` / `LastPublishedWhen`. Full history needs `CMS_ContentItemVersion` (only with content versioning enabled; 0 rows locally).
+- Created over time by content type (`CreatedWhen`).
+- Time to publish: median days from created to first published, per content type.
+- Editor contributions: created / modified / published per admin user. Own permission (per-user data).
+
+_Quality and governance_
+
+- Tag coverage: untagged share per taxonomy field, top tags, unused tags. Smart folders often filter by tags. Source: `CMS_ContentItemTag` (155 rows locally), `CMS_Tag`, `CMS_Taxonomy`.
+- Outdated translations: language variants last modified before the default language variant (extends language coverage). Optional: AIRA translation task status (`CMS_TranslationTask`, 0 rows locally).
+- SEO fields / image descriptions missing. _Uncertain: fields are project-specific (e.g. DancingGoat `SEOFields*`), would need configuration, conflicts with "no extension points"._
+
+_Content performance (content + activities)_
+
+- Stale but popular: high-traffic pages not modified in 12 months (what to refresh first). Spec (with pages with no visits): `.agent-resources/REPORT-15-PAGE-FRESHNESS.md`.
+- Pages with no visits: published pages with 0 page visits in 90 days. Needs data retention note.
+- Performance by content type or tag: page visits rolled up via `ActivityWebPageItemGUID`.
+- Most-used reusable items: usage count and where used (pages, emails); risky to edit. Inverse of unused reusable items. Source: `CMS_ContentItemReference`. Spec: `.agent-resources/REPORT-16-REUSABLE-USAGE.md`.
+- Personalization and widget/template usage: pages with personalized widgets, variant counts, widget and template counts. _Uncertain: parses `ContentItemCommonDataVisualBuilderWidgets` JSON; cost on large sites._
+
+_Housekeeping_
+
+- Recycle bin: deleted items per period by user and type; items permanently deleted soon (retention default 30 days). Source: `CMS_RecycleBinContentItem`.
+- Redirects and former URLs over time; redirects from unpublished/deleted pages. Source: `CMS_WebPageFormerUrlPath`.
+- Content sync health: synchronizations by status, failures. Source: `CMS_Synchronization`. Completed/failed are cleaned daily, so little history.
+- Workspaces and folders: items per workspace and content folder, items in no folder. _Verify item → workspace column._
+
+Notes: version history does not record workflow step moves (only publish, unpublish, scheduling), so "days in step" stays a `ModifiedWhen` proxy. Versions, recycle bin, former URLs and translation tasks have 0 rows locally; seed before visual checks.
+
 **Consents**
 
 - Agreements and revocations per consent over time.
@@ -116,6 +158,7 @@ Notes:
 - Build as a custom admin application with a custom React page template.
 - Use amCharts for charts. It ships with Xperience by Kentico and is available to admin React components, so there is no extra bundle size or licensing question.
 - Load data through page commands.
+- C# types are `internal` by default. Make a type `public` only when a public signature, the admin page/command API, or client serialization needs it (e.g. page classes, result types, service interfaces). Repositories, SQL builders, report builders, data/row records and helpers stay `internal`; tests see them through `InternalsVisibleTo`.
 - Reference: the Community Portal reporting admin UI (`CommunityStatsLayoutTemplate.tsx` in the `Kentico/community-portal` repo), linked from the Admin Design Components README.
 - Stats should have their own application permissions to help administrators limit who has access to the information
 - **Permission per report page.** Today `StatsApplicationPage` declares only `SystemPermissions.VIEW`, and every report page checks VIEW. Change to one custom permission per report page:
