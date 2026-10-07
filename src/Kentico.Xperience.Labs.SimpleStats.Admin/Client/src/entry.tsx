@@ -11,6 +11,7 @@ import { MembersTemplate as Members } from './members/MembersTemplate';
 import { NewContactsTemplate as NewContacts } from './new-contacts/NewContactsTemplate';
 import { OrdersRevenueTemplate as OrdersRevenue } from './orders-revenue/OrdersRevenueTemplate';
 import { PageFreshnessTemplate as PageFreshness } from './page-freshness/PageFreshnessTemplate';
+import { PublishingActivityTemplate as PublishingActivity } from './publishing-activity/PublishingActivityTemplate';
 import { PublishingCalendarTemplate as PublishingCalendar } from './publishing-calendar/PublishingCalendarTemplate';
 import { RecipientListsTemplate as RecipientLists } from './recipient-lists/RecipientListsTemplate';
 import { ReusableUsageTemplate as ReusableUsage } from './reusable-usage/ReusableUsageTemplate';
@@ -28,6 +29,7 @@ export const PublishingCalendarTemplate = withExportPermission(PublishingCalenda
 export const ContentLocksTemplate = withExportPermission(ContentLocks);
 export const PageFreshnessTemplate = withExportPermission(PageFreshness);
 export const ReusableUsageTemplate = withExportPermission(ReusableUsage);
+export const PublishingActivityTemplate = withExportPermission(PublishingActivity);
 export const EventLogTemplate = withExportPermission(EventLog);
 export const OrdersRevenueTemplate = withExportPermission(OrdersRevenue);
 export const CustomersTemplate = withExportPermission(Customers);

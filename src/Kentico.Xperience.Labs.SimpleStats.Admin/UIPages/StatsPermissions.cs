@@ -35,6 +35,9 @@ public static class StatsPermissions
     public const string REUSABLE_USAGE = PREFIX + "ReusableUsage";
     public const string REUSABLE_USAGE_DISPLAY_NAME = "Reusable content usage";
 
+    public const string PUBLISHING_ACTIVITY = PREFIX + "PublishingActivity";
+    public const string PUBLISHING_ACTIVITY_DISPLAY_NAME = "Publishing activity";
+
     public const string EVENT_LOG = PREFIX + "EventLog";
     public const string EVENT_LOG_DISPLAY_NAME = "Event log";
 

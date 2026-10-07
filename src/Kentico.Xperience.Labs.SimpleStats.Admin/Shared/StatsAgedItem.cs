@@ -39,6 +39,13 @@ public sealed record StatsAgedItem(
     public DateOnly? LastModified { get; init; }
 
     /// <summary>
+    /// Optional date the days are counted to when it is not the read time (for example the first publish), server date.
+    /// <c>null</c> (left out of the JSON) for lists without it.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateOnly? Until { get; init; }
+
+    /// <summary>
     /// Returns whole days from <paramref name="since"/> to <paramref name="now"/>, never below 0.
     /// </summary>
     public static int GetDays(DateTime since, DateTime now) => Math.Max((int)(now - since).TotalDays, 0);

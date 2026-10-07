@@ -242,6 +242,8 @@ export interface StatsAgedItem {
   readonly channel?: string | null;
   /** Optional date of the last change (`yyyy-MM-dd`, server date) when the age counts from something else (for example a lock). */
   readonly lastModified?: string | null;
+  /** Optional date the days are counted to (`yyyy-MM-dd`, server date) when it is not the read time (for example the first publish). */
+  readonly until?: string | null;
 }
 
 /**

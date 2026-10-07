@@ -13,13 +13,13 @@ The library adds the **Simple Stats (Labs)** application to the **Digital market
 
 Reports are grouped into sections. Opening the application or a section opens its first report the role may see.
 
-| Section  | Reports                                                                                       |
-| -------- | --------------------------------------------------------------------------------------------- |
-| Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents    |
-| Emails   | Email summary, Recipient lists                                                                |
-| Content  | Content inventory, Publishing calendar, Content locks, Page freshness, Reusable content usage |
-| Commerce | Orders and revenue, Customers                                                                 |
-| System   | Event log                                                                                     |
+| Section  | Reports                                                                                                            |
+| -------- | ------------------------------------------------------------------------------------------------------------------ |
+| Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents                         |
+| Emails   | Email summary, Recipient lists                                                                                     |
+| Content  | Content inventory, Publishing calendar, Content locks, Page freshness, Reusable content usage, Publishing activity |
+| Commerce | Orders and revenue, Customers                                                                                      |
+| System   | Event log                                                                                                          |
 
 Sections have no permission of their own. A section is hidden when the role has no permission for any of its reports. A role with **View** but no report permission sees a **No reports available** message.
 
@@ -42,6 +42,7 @@ Sections have no permission of their own. A section is hidden when the role has 
 | Content locks          | `SimpleStats.ContentLocks`       |
 | Page freshness         | `SimpleStats.PageFreshness`      |
 | Reusable content usage | `SimpleStats.ReusableUsage`      |
+| Publishing activity    | `SimpleStats.PublishingActivity` |
 | Event log              | `SimpleStats.EventLog`           |
 | Orders and revenue     | `SimpleStats.OrdersRevenue`      |
 | Customers              | `SimpleStats.Customers`          |
@@ -299,6 +300,26 @@ Shows which reusable items are used the most, and where, so editors know which i
 
 Name and last change come from the item's most recently changed language variant. Items in all workspaces are counted. Changing a reusable item does not change emails that were already sent.
 
+### Publishing activity
+
+Shows how much content is created and published, how often published content is updated, and how long content takes to go live.
+
+- **Definitions** (counts are per language variant; page folders are left out)
+  - **Created** - variants created in the range.
+  - **First published** - variants published for the first time in the range (the item went live in that language). A variant with a published version and a newer draft counts once.
+  - **Updates** - publishes in the range that were not the variant's first publish. Read from content version history (**Settings → Content → Content versioning → Enable content versioning**), which stores a version on every publish of pages, reusable items and headless items, the first one too. Emails are not versioned, so they have no updates. A variant's earliest stored publish counts as its first publish when it was stored within 60 seconds of the first publish date; every other publish is an update. History starts when it was enabled and keeps only the last N versions per variant (the **Number of stored versions** setting; 0 keeps all), so older updates are missing. When history is disabled, updates are hidden and a message says so.
+  - **Time to publish** - days from created to first published, for variants first published in the range. **Median** (half took less) and **90th percentile** are computed in SQL (`PERCENTILE_CONT`). A first publish before the creation date (inconsistent data) is left out.
+  - **Published, date unknown** - variants that are or were published but have no first publish date (for example migrated content). They are not in the first published counts; the hints show how many there are (all dates, not only the range).
+- **KPIs** - created, first published and updates (each compared with the previous period of the same length), and median days to publish (with the 90th percentile).
+- **Filters** - date range, grouping, **Content** kind (all, pages, reusable, emails, headless) and channel (only for pages, emails and headless items, with a channel of the matching type).
+- **Tiles**
+  - "Created and published" - columns of created, first published and updates per period, or a table.
+  - "By content type" - table of created, first published, updates and median days to publish per content type, most activity first, or a bar chart of created items. Click a type to open it in the **Content types** application.
+  - "Slowest to publish" - table (item, content type, language, channel, created, first published, days to publish), longest first, or a bar chart of days. Click an item to open it where it is edited. Shows up to 25 rows.
+- Each tile has its own CSV export.
+
+Deleted items are not counted, also not for past dates. Times are compared as stored (server time).
+
 ### Orders and revenue
 
 Shows [digital commerce](https://docs.kentico.com/documentation/business-users/manage-commerce-stores) orders and revenue over time, orders by status, and the products with the most revenue.
@@ -427,6 +448,7 @@ A handler exception is logged and does not fail the export. Handlers run one aft
 | Content locks          | `content-locks-items`, `content-locks-users`                                                                                                                                                                 |
 | Page freshness         | `page-freshness-stale-popular`, `page-freshness-age`, `page-freshness-no-visits`                                                                                                                             |
 | Reusable content usage | `reusable-usage-items`, `reusable-usage-distribution`, `reusable-usage-types`                                                                                                                                |
+| Publishing activity    | `publishing-activity-series`, `publishing-activity-types`, `publishing-activity-slowest`                                                                                                                     |
 | Orders and revenue     | `orders-revenue`, `orders-by-status`, `orders-top-products`                                                                                                                                                  |
 | Customers              | `customers-growth`, `customers-active`, `customers-by-country`, `customers-top-states`, `customers-top-by-revenue`, `customers-top-by-orders`, `customers-top-by-items`                                      |
 | Event log              | `event-log`, `event-log-sources`, `event-log-sources-xperience`, `event-log-sources-custom`, `event-log-codes`, `event-log-users`                                                                            |

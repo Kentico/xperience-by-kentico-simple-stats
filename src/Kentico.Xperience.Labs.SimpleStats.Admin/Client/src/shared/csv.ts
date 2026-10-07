@@ -160,7 +160,7 @@ export function toCoverageCsv(
 
 /**
  * Builds CSV text for an aged item list: label, optional category / language / channel / detail, since,
- * optional last modified, days and URL (the admin link from `getAdminHref` made absolute).
+ * optional last modified, optional until, days and URL (the admin link from `getAdminHref` made absolute).
  */
 export function toAgedCsv(
   items: readonly StatsAgedItem[],
@@ -172,6 +172,7 @@ export function toAgedCsv(
     readonly detail?: string;
     readonly since: string;
     readonly lastModified?: string;
+    readonly until?: string;
     readonly days: string;
   },
   getAdminHref?: (item: StatsAgedItem) => string | null,
@@ -185,6 +186,7 @@ export function toAgedCsv(
       ...(captions.detail ? [captions.detail] : []),
       captions.since,
       ...(captions.lastModified ? [captions.lastModified] : []),
+      ...(captions.until ? [captions.until] : []),
       captions.days,
       'URL',
     ],
@@ -196,6 +198,7 @@ export function toAgedCsv(
       ...(captions.detail ? [item.detail] : []),
       item.since,
       ...(captions.lastModified ? [item.lastModified ?? null] : []),
+      ...(captions.until ? [item.until ?? null] : []),
       item.days,
       toAbsoluteUrl(getAdminHref?.(item) ?? null),
     ]),
