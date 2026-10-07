@@ -18,6 +18,7 @@ using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.PublishingCalendar;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.RecipientLists;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ReusableUsage;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.TopPages;
+using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.TranslationStatus;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.WebPageStats;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
 using Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
@@ -76,6 +77,8 @@ internal sealed class SimpleStatsWebAdminModule : AdminModule
         services.TryAddTransient<IReusableUsageService, ReusableUsageService>();
         services.TryAddTransient<IPublishingActivityRepository, PublishingActivityRepository>();
         services.TryAddTransient<IPublishingActivityService, PublishingActivityService>();
+        services.TryAddTransient<ITranslationStatusRepository, TranslationStatusRepository>();
+        services.TryAddTransient<ITranslationStatusService, TranslationStatusService>();
         services.TryAddTransient<IEventLogRepository, EventLogRepository>();
         services.TryAddTransient<IEventLogReportService, EventLogReportService>();
         services.TryAddTransient<IStatsAmountFormatter, StatsAmountFormatter>();

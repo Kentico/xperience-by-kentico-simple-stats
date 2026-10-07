@@ -31,6 +31,12 @@ public sealed record StatsSnapshotFilter
     public int? ContentTypeId { get; init; }
 
     /// <summary>
+    /// Optional content language ID (for example the translation status report). Only reports with a language filter read it
+    /// and check it against their own options; it is not part of <see cref="StatsSnapshotQuery"/>. <c>null</c> or an unknown ID means all.
+    /// </summary>
+    public int? LanguageId { get; init; }
+
+    /// <summary>
     /// Returns <see cref="Window"/> when it is one of <paramref name="windows"/>, else <paramref name="defaultWindow"/>.
     /// </summary>
     public int NormalizeWindow(IReadOnlyCollection<int> windows, int defaultWindow) =>

@@ -28,7 +28,7 @@ internal static class ContentLocksReportBuilder
     public const string UnknownUserKey = "(unknown)";
 
     /// <summary>Label of the row with the locks of users that no longer exist.</summary>
-    public const string UnknownUserLabel = "Unknown user";
+    public const string UnknownUserLabel = StatsUserLabels.UnknownUserLabel;
 
     /// <summary>Variants locked before this time hold an old lock.</summary>
     public static DateTime GetOldBefore(DateTime now) => now.AddDays(-OldLockDays);
@@ -81,7 +81,7 @@ internal static class ContentLocksReportBuilder
                 row.DisplayName,
                 string.IsNullOrWhiteSpace(row.ContentType) ? null : row.ContentType,
                 row.Language,
-                GetUserLabel(row.UserId, row.UserName),
+                StatsUserLabels.GetLabel(row.UserId, row.UserName),
                 DateOnly.FromDateTime(row.LockedWhen),
                 StatsAgedItem.GetDays(row.LockedWhen, data.Now))
             {
@@ -110,23 +110,10 @@ internal static class ContentLocksReportBuilder
         decimal oldestDays = StatsAgedItem.GetDays(user.OldestLockedWhen, now);
 
         return user.UserId is int userId
-            ? new StatsRankedEntry($"user:{userId}", GetUserLabel(userId, user.UserName), null, user.LockCount, oldestDays, null)
+            ? new StatsRankedEntry($"user:{userId}", StatsUserLabels.GetLabel(userId, user.UserName), null, user.LockCount, oldestDays, null)
             {
                 AdminPath = getUserPath?.Invoke(userId),
             }
             : new StatsRankedEntry(UnknownUserKey, UnknownUserLabel, null, user.LockCount, oldestDays, null);
-    }
-
-    /// <summary>
-    /// The user's display name, "User {ID}" without a name, or <see cref="UnknownUserLabel"/> when the user no longer exists.
-    /// </summary>
-    private static string GetUserLabel(int? userId, string? userName)
-    {
-        if (userId is not int id)
-        {
-            return UnknownUserLabel;
-        }
-
-        return string.IsNullOrWhiteSpace(userName) ? $"User {id.ToString(CultureInfo.InvariantCulture)}" : userName;
     }
 }

@@ -17,6 +17,7 @@ import { RecipientListsTemplate as RecipientLists } from './recipient-lists/Reci
 import { ReusableUsageTemplate as ReusableUsage } from './reusable-usage/ReusableUsageTemplate';
 import { withExportPermission } from './shared/exportPermission';
 import { TopPagesTemplate as TopPages } from './top-pages/TopPagesTemplate';
+import { TranslationStatusTemplate as TranslationStatus } from './translation-status/TranslationStatusTemplate';
 import { WebPageStatsTemplate as WebPageStats } from './web-page-stats/WebPageStatsTemplate';
 
 // Report templates get the Export permission (`canExport`) for their "Export CSV" buttons.
@@ -30,6 +31,7 @@ export const ContentLocksTemplate = withExportPermission(ContentLocks);
 export const PageFreshnessTemplate = withExportPermission(PageFreshness);
 export const ReusableUsageTemplate = withExportPermission(ReusableUsage);
 export const PublishingActivityTemplate = withExportPermission(PublishingActivity);
+export const TranslationStatusTemplate = withExportPermission(TranslationStatus);
 export const EventLogTemplate = withExportPermission(EventLog);
 export const OrdersRevenueTemplate = withExportPermission(OrdersRevenue);
 export const CustomersTemplate = withExportPermission(Customers);

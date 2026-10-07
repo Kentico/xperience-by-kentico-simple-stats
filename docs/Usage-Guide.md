@@ -13,13 +13,13 @@ The library adds the **Simple Stats (Labs)** application to the **Digital market
 
 Reports are grouped into sections. Opening the application or a section opens its first report the role may see.
 
-| Section  | Reports                                                                                                            |
-| -------- | ------------------------------------------------------------------------------------------------------------------ |
-| Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents                         |
-| Emails   | Email summary, Recipient lists                                                                                     |
-| Content  | Content inventory, Publishing calendar, Content locks, Page freshness, Reusable content usage, Publishing activity |
-| Commerce | Orders and revenue, Customers                                                                                      |
-| System   | Event log                                                                                                          |
+| Section  | Reports                                                                                                                                |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents                                             |
+| Emails   | Email summary, Recipient lists                                                                                                         |
+| Content  | Content inventory, Publishing calendar, Content locks, Page freshness, Reusable content usage, Publishing activity, Translation status |
+| Commerce | Orders and revenue, Customers                                                                                                          |
+| System   | Event log                                                                                                                              |
 
 Sections have no permission of their own. A section is hidden when the role has no permission for any of its reports. A role with **View** but no report permission sees a **No reports available** message.
 
@@ -43,6 +43,7 @@ Sections have no permission of their own. A section is hidden when the role has 
 | Page freshness         | `SimpleStats.PageFreshness`      |
 | Reusable content usage | `SimpleStats.ReusableUsage`      |
 | Publishing activity    | `SimpleStats.PublishingActivity` |
+| Translation status     | `SimpleStats.TranslationStatus`  |
 | Event log              | `SimpleStats.EventLog`           |
 | Orders and revenue     | `SimpleStats.OrdersRevenue`      |
 | Customers              | `SimpleStats.Customers`          |
@@ -320,6 +321,24 @@ Shows how much content is created and published, how often published content is 
 
 Deleted items are not counted, also not for past dates. Times are compared as stored (server time).
 
+### Translation status
+
+Shows which translations are missing or behind the default language, so translators know what to update.
+
+- **Definitions** (counts are per item and language; page folders are left out)
+  - **Translated** - items with a variant in the language.
+  - **Outdated** - a translated variant last saved more than 1 hour before the item's default language variant. Days behind = default variant's last change - the translation's last change. The hour covers variants saved together (imports, seeding, bulk saves). Any save counts, also drafts that were never published, so this is a hint, not a comparison of the content. Items without a default language variant are never outdated.
+  - **Missing** - items without a variant in the language. Same as the **Language coverage** tile of the Content inventory with the same filters.
+- **KPIs** - translated variants, outdated (with a warning when above 0) and missing.
+- **Filters** - **Language** (the non-default languages; all or one), **Content** kind (all, pages, reusable, emails, headless) and channel (only for pages, emails and headless items, with a channel of the matching type). With only one language, the report shows "Only one language is set up."
+- **Tiles**
+  - "By language" - stacked bar of up to date, outdated and missing items per language, or a table.
+  - "Outdated translations" - table (item, content type, language, channel, last modified by, translation modified, default modified, days behind), most days behind first, or a bar chart of days. Click an item to open it where it is edited. Shows up to 50 rows.
+  - "By content type" - outdated and missing per content type, most outdated first, or a bar chart. Click a type to open it in the **Content types** application.
+- Each tile has its own CSV export.
+
+AIRA translation tasks are not reported. Items in all workspaces are counted. Times are compared as stored (server time).
+
 ### Orders and revenue
 
 Shows [digital commerce](https://docs.kentico.com/documentation/business-users/manage-commerce-stores) orders and revenue over time, orders by status, and the products with the most revenue.
@@ -449,6 +468,7 @@ A handler exception is logged and does not fail the export. Handlers run one aft
 | Page freshness         | `page-freshness-stale-popular`, `page-freshness-age`, `page-freshness-no-visits`                                                                                                                             |
 | Reusable content usage | `reusable-usage-items`, `reusable-usage-distribution`, `reusable-usage-types`                                                                                                                                |
 | Publishing activity    | `publishing-activity-series`, `publishing-activity-types`, `publishing-activity-slowest`                                                                                                                     |
+| Translation status     | `translation-status-languages`, `translation-status-outdated`, `translation-status-types`                                                                                                                    |
 | Orders and revenue     | `orders-revenue`, `orders-by-status`, `orders-top-products`                                                                                                                                                  |
 | Customers              | `customers-growth`, `customers-active`, `customers-by-country`, `customers-top-states`, `customers-top-by-revenue`, `customers-top-by-orders`, `customers-top-by-items`                                      |
 | Event log              | `event-log`, `event-log-sources`, `event-log-sources-xperience`, `event-log-sources-custom`, `event-log-codes`, `event-log-users`                                                                            |

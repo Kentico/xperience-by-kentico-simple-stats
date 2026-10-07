@@ -17,6 +17,7 @@ public class StatsNavigationTests
         StatsPermissions.PAGE_FRESHNESS,
         StatsPermissions.REUSABLE_USAGE,
         StatsPermissions.PUBLISHING_ACTIVITY,
+        StatsPermissions.TRANSLATION_STATUS,
         StatsPermissions.EVENT_LOG,
         StatsPermissions.ORDERS_REVENUE,
         StatsPermissions.CUSTOMERS,
@@ -42,7 +43,7 @@ public class StatsNavigationTests
 
     [TestCase(typeof(StatsContactsSection), new[] { "activity-counts", "top-pages", "new-contacts", "form-submissions", "members", "consents" })]
     [TestCase(typeof(StatsEmailsSection), new[] { "email-summary", "recipient-lists" })]
-    [TestCase(typeof(StatsContentSection), new[] { "content-inventory", "publishing-calendar", "content-locks", "page-freshness", "reusable-usage", "publishing-activity" })]
+    [TestCase(typeof(StatsContentSection), new[] { "content-inventory", "publishing-calendar", "content-locks", "page-freshness", "reusable-usage", "publishing-activity", "translation-status" })]
     [TestCase(typeof(StatsCommerceSection), new[] { "orders-revenue", "customers" })]
     [TestCase(typeof(StatsSystemSection), new[] { "event-log" })]
     public void Section_HasReportsInOrder(Type sectionType, string[] slugs) =>
@@ -189,7 +190,7 @@ public class StatsNavigationTests
         Assert.Multiple(() =>
         {
             Assert.That(deniedSections, Is.EquivalentTo(new[] { "contacts", "emails", "commerce", "system" }));
-            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory", "content-locks", "page-freshness", "reusable-usage", "publishing-activity" }));
+            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory", "content-locks", "page-freshness", "reusable-usage", "publishing-activity", "translation-status" }));
             Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsApplicationPage)), deniedSections)?.Path, Is.EqualTo("content"));
             Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsContentSection)), deniedReports)?.Path, Is.EqualTo("publishing-calendar"));
         });
@@ -206,7 +207,7 @@ public class StatsNavigationTests
         Assert.Multiple(() =>
         {
             Assert.That(deniedSections, Is.EquivalentTo(new[] { "contacts", "emails", "commerce", "system" }));
-            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory", "publishing-calendar", "page-freshness", "reusable-usage", "publishing-activity" }));
+            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory", "publishing-calendar", "page-freshness", "reusable-usage", "publishing-activity", "translation-status" }));
             Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsApplicationPage)), deniedSections)?.Path, Is.EqualTo("content"));
             Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsContentSection)), deniedReports)?.Path, Is.EqualTo("content-locks"));
         });
@@ -223,7 +224,7 @@ public class StatsNavigationTests
         Assert.Multiple(() =>
         {
             Assert.That(deniedSections, Is.EquivalentTo(new[] { "contacts", "emails", "commerce", "system" }));
-            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory", "publishing-calendar", "content-locks", "reusable-usage", "publishing-activity" }));
+            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory", "publishing-calendar", "content-locks", "reusable-usage", "publishing-activity", "translation-status" }));
             Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsApplicationPage)), deniedSections)?.Path, Is.EqualTo("content"));
             Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsContentSection)), deniedReports)?.Path, Is.EqualTo("page-freshness"));
         });
@@ -240,7 +241,7 @@ public class StatsNavigationTests
         Assert.Multiple(() =>
         {
             Assert.That(deniedSections, Is.EquivalentTo(new[] { "contacts", "emails", "commerce", "system" }));
-            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory", "publishing-calendar", "content-locks", "page-freshness", "publishing-activity" }));
+            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory", "publishing-calendar", "content-locks", "page-freshness", "publishing-activity", "translation-status" }));
             Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsApplicationPage)), deniedSections)?.Path, Is.EqualTo("content"));
             Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsContentSection)), deniedReports)?.Path, Is.EqualTo("reusable-usage"));
         });
@@ -257,16 +258,33 @@ public class StatsNavigationTests
         Assert.Multiple(() =>
         {
             Assert.That(deniedSections, Is.EquivalentTo(new[] { "contacts", "emails", "commerce", "system" }));
-            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory", "publishing-calendar", "content-locks", "page-freshness", "reusable-usage" }));
+            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory", "publishing-calendar", "content-locks", "page-freshness", "reusable-usage", "translation-status" }));
             Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsApplicationPage)), deniedSections)?.Path, Is.EqualTo("content"));
             Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsContentSection)), deniedReports)?.Path, Is.EqualTo("publishing-activity"));
         });
     }
 
     [Test]
+    public async Task OnlyTranslationStatus_ShowsOnlyContentSection_AndOpensTranslationStatus()
+    {
+        var isGranted = Granted(StatsPermissions.TRANSLATION_STATUS);
+
+        var deniedSections = await StatsNavigation.GetDeniedChildSlugs(typeof(StatsApplicationPage), isGranted);
+        var deniedReports = await StatsNavigation.GetDeniedChildSlugs(typeof(StatsContentSection), isGranted);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(deniedSections, Is.EquivalentTo(new[] { "contacts", "emails", "commerce", "system" }));
+            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory", "publishing-calendar", "content-locks", "page-freshness", "reusable-usage", "publishing-activity" }));
+            Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsApplicationPage)), deniedSections)?.Path, Is.EqualTo("content"));
+            Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsContentSection)), deniedReports)?.Path, Is.EqualTo("translation-status"));
+        });
+    }
+
+    [Test]
     public async Task AllContentReports_OpensContentInventoryFirst()
     {
-        var isGranted = Granted(StatsPermissions.CONTENT_INVENTORY, StatsPermissions.PUBLISHING_CALENDAR, StatsPermissions.CONTENT_LOCKS, StatsPermissions.PAGE_FRESHNESS, StatsPermissions.REUSABLE_USAGE, StatsPermissions.PUBLISHING_ACTIVITY);
+        var isGranted = Granted(StatsPermissions.CONTENT_INVENTORY, StatsPermissions.PUBLISHING_CALENDAR, StatsPermissions.CONTENT_LOCKS, StatsPermissions.PAGE_FRESHNESS, StatsPermissions.REUSABLE_USAGE, StatsPermissions.PUBLISHING_ACTIVITY, StatsPermissions.TRANSLATION_STATUS);
 
         var deniedReports = await StatsNavigation.GetDeniedChildSlugs(typeof(StatsContentSection), isGranted);
 
@@ -282,7 +300,7 @@ public class StatsNavigationTests
     {
         var denied = await StatsNavigation.GetDeniedChildSlugs(
             typeof(StatsApplicationPage),
-            Granted([.. allPermissions.Where(p => p is not StatsPermissions.CONTENT_INVENTORY and not StatsPermissions.PUBLISHING_CALENDAR and not StatsPermissions.CONTENT_LOCKS and not StatsPermissions.PAGE_FRESHNESS and not StatsPermissions.REUSABLE_USAGE and not StatsPermissions.PUBLISHING_ACTIVITY)]));
+            Granted([.. allPermissions.Where(p => p is not StatsPermissions.CONTENT_INVENTORY and not StatsPermissions.PUBLISHING_CALENDAR and not StatsPermissions.CONTENT_LOCKS and not StatsPermissions.PAGE_FRESHNESS and not StatsPermissions.REUSABLE_USAGE and not StatsPermissions.PUBLISHING_ACTIVITY and not StatsPermissions.TRANSLATION_STATUS)]));
 
         Assert.That(denied, Is.EquivalentTo(new[] { "content" }));
     }

@@ -15,6 +15,16 @@ export interface CoverageCaptions {
   readonly missing: string;
   /** Noun of the total in tooltips, for example "items". */
   readonly totalNoun: string;
+  /**
+   * Caption of the flagged part of the covered rows (`item.flagged`), for example "Outdated". When set, the covered part
+   * shows `covered - flagged` and the flagged part is its own segment in the alert color. Omit for plain coverage.
+   */
+  readonly flagged?: string;
+}
+
+/** Covered rows without the flagged ones (when `captions.flagged` is set), else all covered rows. */
+export function coveredNotFlagged(item: StatsCoverageItem, captions: CoverageCaptions): number {
+  return captions.flagged ? Math.max(item.covered - (item.flagged ?? 0), 0) : item.covered;
 }
 
 export interface CoverageBarChartProps {
@@ -28,6 +38,7 @@ interface ChartRow {
   readonly key: string;
   readonly label: string;
   readonly covered: number;
+  readonly flagged: number;
   readonly missing: number;
   readonly tooltip: string;
 }
@@ -44,7 +55,8 @@ function escapeChartText(text: string): string {
 
 /**
  * Horizontal 100% stacked bar chart (amCharts 5): one bar per row, covered part in the first
- * series color and the missing part in the disabled background color (like an empty track).
+ * series color, optional flagged part (see `CoverageCaptions.flagged`) in the alert color and
+ * the missing part in the disabled background color (like an empty track).
  * The root is created in `useLayoutEffect` and disposed on unmount or data change.
  */
 export const CoverageBarChart = React.memo(function CoverageBarChart({ items, captions, ariaLabel }: CoverageBarChartProps) {
@@ -52,17 +64,27 @@ export const CoverageBarChart = React.memo(function CoverageBarChart({ items, ca
 
   const rows = useMemo<ChartRow[]>(
     () =>
-      items.map((item) => ({
-        key: item.key,
-        label: item.label,
-        covered: item.covered,
-        missing: item.missing,
-        tooltip: [
-          `[bold]${escapeChartText(item.label)}[/]`,
-          `${captions.covered}: ${numberFormat.format(item.covered)} of ${numberFormat.format(item.total)} ${captions.totalNoun} (${formatShare(item.share)})`,
-          `${captions.missing}: ${numberFormat.format(item.missing)}`,
-        ].join('\n'),
-      })),
+      items.map((item) => {
+        const covered = coveredNotFlagged(item, captions);
+        const flagged = captions.flagged ? (item.flagged ?? 0) : 0;
+        const coveredLine = captions.flagged
+          ? `${captions.covered}: ${numberFormat.format(covered)}`
+          : `${captions.covered}: ${numberFormat.format(item.covered)} of ${numberFormat.format(item.total)} ${captions.totalNoun} (${formatShare(item.share)})`;
+        return {
+          key: item.key,
+          label: item.label,
+          covered,
+          flagged,
+          missing: item.missing,
+          tooltip: [
+            `[bold]${escapeChartText(item.label)}[/]`,
+            coveredLine,
+            ...(captions.flagged ? [`${captions.flagged}: ${numberFormat.format(flagged)}`] : []),
+            `${captions.missing}: ${numberFormat.format(item.missing)}`,
+            ...(captions.flagged ? [`Total: ${numberFormat.format(item.total)} ${captions.totalNoun}`] : []),
+          ].join('\n'),
+        };
+      }),
     [items, captions],
   );
   // Rebuild the chart only when the rows change by content, not on every new prop identity.
@@ -77,6 +99,7 @@ export const CoverageBarChart = React.memo(function CoverageBarChart({ items, ca
     const tokens = getChartTokens(root.dom);
     const coveredColor = getSeriesPalette(root.dom)[0];
     const missingColor = resolveToken(Colors.BackgroundDisabled, root.dom);
+    const flaggedColor = resolveToken(Colors.AlertBackgroundHighEmphasis, root.dom);
 
     const chart = root.container.children.push(
       am5xy.XYChart.new(root, {
@@ -142,7 +165,7 @@ export const CoverageBarChart = React.memo(function CoverageBarChart({ items, ca
       }),
     );
 
-    const createSeries = (field: 'covered' | 'missing', name: string, fill?: am5.Color) => {
+    const createSeries = (field: 'covered' | 'flagged' | 'missing', name: string, fill?: am5.Color) => {
       const series = chart.series.push(
         am5xy.ColumnSeries.new(root, {
           name,
@@ -167,6 +190,9 @@ export const CoverageBarChart = React.memo(function CoverageBarChart({ items, ca
     };
 
     const covered = createSeries('covered', captions.covered, coveredColor);
+    if (captions.flagged) {
+      createSeries('flagged', captions.flagged, flaggedColor ? am5.color(flaggedColor) : undefined);
+    }
     createSeries('missing', captions.missing, missingColor ? am5.color(missingColor) : undefined);
 
     // Share label inside the covered part, when there is room.
@@ -201,7 +227,7 @@ export const CoverageBarChart = React.memo(function CoverageBarChart({ items, ca
     return () => {
       root.dispose();
     };
-  }, [chartId, data, captions.covered, captions.missing]);
+  }, [chartId, data, captions.covered, captions.flagged, captions.missing]);
 
   return (
     <div

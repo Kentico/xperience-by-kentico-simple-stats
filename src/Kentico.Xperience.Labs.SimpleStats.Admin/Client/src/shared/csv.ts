@@ -128,13 +128,17 @@ export function toShareCsv(
   );
 }
 
-/** Builds CSV text for "x of y" rows: label, optional secondary label, covered, missing, total, share (%, one decimal). */
+/**
+ * Builds CSV text for "x of y" rows: label, optional secondary label, covered, optional flagged, missing, total, share (%, one decimal).
+ * With a `flagged` caption, the covered column is `covered - flagged` (as in `CoverageTable`).
+ */
 export function toCoverageCsv(
   items: readonly StatsCoverageItem[],
   captions: {
     readonly label: string;
     readonly secondaryLabel?: string;
     readonly covered: string;
+    readonly flagged?: string;
     readonly missing: string;
   },
 ): CsvData {
@@ -143,6 +147,7 @@ export function toCoverageCsv(
       captions.label,
       ...(captions.secondaryLabel ? [captions.secondaryLabel] : []),
       captions.covered,
+      ...(captions.flagged ? [captions.flagged] : []),
       captions.missing,
       'Total',
       'Share (%)',
@@ -150,7 +155,8 @@ export function toCoverageCsv(
     items.map((item) => [
       item.label,
       ...(captions.secondaryLabel ? [item.secondaryLabel] : []),
-      item.covered,
+      captions.flagged ? Math.max(item.covered - (item.flagged ?? 0), 0) : item.covered,
+      ...(captions.flagged ? [item.flagged ?? 0] : []),
       item.missing,
       item.total,
       Math.round(item.share * 1000) / 10,

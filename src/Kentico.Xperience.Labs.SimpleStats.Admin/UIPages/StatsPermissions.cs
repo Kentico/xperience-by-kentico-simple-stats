@@ -38,6 +38,9 @@ public static class StatsPermissions
     public const string PUBLISHING_ACTIVITY = PREFIX + "PublishingActivity";
     public const string PUBLISHING_ACTIVITY_DISPLAY_NAME = "Publishing activity";
 
+    public const string TRANSLATION_STATUS = PREFIX + "TranslationStatus";
+    public const string TRANSLATION_STATUS_DISPLAY_NAME = "Translation status";
+
     public const string EVENT_LOG = PREFIX + "EventLog";
     public const string EVENT_LOG_DISPLAY_NAME = "Event log";
 

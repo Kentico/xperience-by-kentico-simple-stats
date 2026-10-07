@@ -23,6 +23,8 @@ export interface StatsSnapshotFilter {
   readonly window?: number | null;
   /** Content type (class) ID. Only reports with a content type filter send it. */
   readonly contentTypeId?: number | null;
+  /** Content language ID. Only reports with a language filter send it. */
+  readonly languageId?: number | null;
 }
 
 /**
@@ -208,6 +210,8 @@ export interface StatsCoverageItem {
   readonly missing: number;
   /** `covered` / `total` (0–1). */
   readonly share: number;
+  /** Optional part of `covered` that needs attention (for example outdated translations). Left out when not used. */
+  readonly flagged?: number | null;
 }
 
 /** Mirrors `StatsComparison`: a value in the range compared with the previous period of the same length. */
