@@ -13,6 +13,7 @@ import { OrdersRevenueTemplate as OrdersRevenue } from './orders-revenue/OrdersR
 import { PageFreshnessTemplate as PageFreshness } from './page-freshness/PageFreshnessTemplate';
 import { PublishingCalendarTemplate as PublishingCalendar } from './publishing-calendar/PublishingCalendarTemplate';
 import { RecipientListsTemplate as RecipientLists } from './recipient-lists/RecipientListsTemplate';
+import { ReusableUsageTemplate as ReusableUsage } from './reusable-usage/ReusableUsageTemplate';
 import { withExportPermission } from './shared/exportPermission';
 import { TopPagesTemplate as TopPages } from './top-pages/TopPagesTemplate';
 import { WebPageStatsTemplate as WebPageStats } from './web-page-stats/WebPageStatsTemplate';
@@ -26,6 +27,7 @@ export const ContentInventoryTemplate = withExportPermission(ContentInventory);
 export const PublishingCalendarTemplate = withExportPermission(PublishingCalendar);
 export const ContentLocksTemplate = withExportPermission(ContentLocks);
 export const PageFreshnessTemplate = withExportPermission(PageFreshness);
+export const ReusableUsageTemplate = withExportPermission(ReusableUsage);
 export const EventLogTemplate = withExportPermission(EventLog);
 export const OrdersRevenueTemplate = withExportPermission(OrdersRevenue);
 export const CustomersTemplate = withExportPermission(Customers);

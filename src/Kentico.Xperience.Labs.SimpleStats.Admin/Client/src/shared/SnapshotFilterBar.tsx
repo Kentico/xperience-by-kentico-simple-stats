@@ -1,7 +1,7 @@
 import { NameToggleButton } from '@kentico/xperience-admin-components';
-import React from 'react';
+import React, { ReactNode } from 'react';
 
-import { allOptionId, ChannelSelect, OptionToggle, RefreshControl } from './filterControls';
+import { allOptionId, ChannelSelect, IdSelect, IdSelectProps, OptionToggle, RefreshControl } from './filterControls';
 import { StatsChannelOption, StatsSnapshotFilter } from './types';
 
 /** Toggle item id that stands for "all" (`kind: null`). */
@@ -30,6 +30,10 @@ export interface SnapshotFilterBarProps {
   readonly kinds?: SnapshotKindOptions;
   /** Channel options. Hide the channel filter by passing none. */
   readonly channels?: readonly StatsChannelOption[];
+  /** Select of ID options from project data (for example content types). Omit to hide it. */
+  readonly select?: IdSelectProps;
+  /** Extra buttons shown before the refresh button (for example a link to another report). */
+  readonly actions?: ReactNode;
   /** Reloads the current filter bypassing the server cache. */
   readonly onRefresh: () => void;
   /** Shows the refresh button as in progress. */
@@ -39,7 +43,7 @@ export interface SnapshotFilterBarProps {
 }
 
 /**
- * Filters of a current-state (snapshot) report: optional window toggle, kind toggle, channel, refresh.
+ * Filters of a current-state (snapshot) report: optional window toggle, kind toggle, channel, ID select, actions, refresh.
  * Same layout as `StatsFilterBar`, without date range or grouping.
  */
 export const SnapshotFilterBar = ({
@@ -48,6 +52,8 @@ export const SnapshotFilterBar = ({
   windows,
   kinds,
   channels = [],
+  select,
+  actions,
   onRefresh,
   isLoading = false,
   updatedAt,
@@ -79,6 +85,8 @@ export const SnapshotFilterBar = ({
       />
     )}
 
-    <RefreshControl onRefresh={onRefresh} isLoading={isLoading} updatedAt={updatedAt} />
+    {select && <IdSelect {...select} />}
+
+    <RefreshControl onRefresh={onRefresh} isLoading={isLoading} updatedAt={updatedAt} actions={actions} />
   </div>
 );

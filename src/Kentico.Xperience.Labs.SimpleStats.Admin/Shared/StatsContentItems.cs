@@ -141,6 +141,17 @@ internal static class StatsContentItemPaths
         };
 
     /// <summary>
+    /// Path of the "General" tab of a content type in the Content types application.
+    /// </summary>
+    /// <param name="adminLinks">Admin link generator.</param>
+    /// <param name="classId">Content type (class) ID.</param>
+    public static string? GetContentTypePath(IStatsAdminLinks adminLinks, int classId) =>
+        adminLinks.GetPath<ContentTypeGeneral>(new PageParameterValues
+        {
+            { typeof(ContentTypeEditSection), classId },
+        });
+
+    /// <summary>
     /// Path of the "Content" tab of a reusable item in the Content hub (all items of its workspace, the given language).
     /// </summary>
     private static string? GetContentHubPath(IStatsAdminLinks adminLinks, ContentItemLink link) =>

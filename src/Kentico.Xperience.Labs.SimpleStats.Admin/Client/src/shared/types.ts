@@ -21,6 +21,8 @@ export interface StatsSnapshotFilter {
   readonly channelId: number | null;
   /** Days the report looks ahead or back from now. Only reports with a window send it. */
   readonly window?: number | null;
+  /** Content type (class) ID. Only reports with a content type filter send it. */
+  readonly contentTypeId?: number | null;
 }
 
 /**

@@ -32,6 +32,9 @@ public static class StatsPermissions
     public const string PAGE_FRESHNESS = PREFIX + "PageFreshness";
     public const string PAGE_FRESHNESS_DISPLAY_NAME = "Page freshness";
 
+    public const string REUSABLE_USAGE = PREFIX + "ReusableUsage";
+    public const string REUSABLE_USAGE_DISPLAY_NAME = "Reusable content usage";
+
     public const string EVENT_LOG = PREFIX + "EventLog";
     public const string EVENT_LOG_DISPLAY_NAME = "Event log";
 

@@ -13,13 +13,13 @@ The library adds the **Simple Stats (Labs)** application to the **Digital market
 
 Reports are grouped into sections. Opening the application or a section opens its first report the role may see.
 
-| Section  | Reports                                                                                    |
-| -------- | ------------------------------------------------------------------------------------------ |
-| Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents |
-| Emails   | Email summary, Recipient lists                                                             |
-| Content  | Content inventory, Publishing calendar, Content locks, Page freshness                      |
-| Commerce | Orders and revenue, Customers                                                              |
-| System   | Event log                                                                                  |
+| Section  | Reports                                                                                       |
+| -------- | --------------------------------------------------------------------------------------------- |
+| Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents    |
+| Emails   | Email summary, Recipient lists                                                                |
+| Content  | Content inventory, Publishing calendar, Content locks, Page freshness, Reusable content usage |
+| Commerce | Orders and revenue, Customers                                                                 |
+| System   | Event log                                                                                     |
 
 Sections have no permission of their own. A section is hidden when the role has no permission for any of its reports. A role with **View** but no report permission sees a **No reports available** message.
 
@@ -31,25 +31,26 @@ Sections have no permission of their own. A section is hidden when the role has 
   - One permission per report. The role sees only the reports it has a permission for. Other reports are hidden from the navigation and return an error if opened by URL.
   - **Export** - shows the **Export CSV** buttons in all reports the role can see. Without it, the buttons are hidden.
 
-| Permission           | Code name                        |
-| -------------------- | -------------------------------- |
-| Activity counts      | `SimpleStats.ActivityCounts`     |
-| Top pages            | `SimpleStats.TopPages`           |
-| New contacts         | `SimpleStats.NewContacts`        |
-| Form submissions     | `SimpleStats.FormSubmissions`    |
-| Content inventory    | `SimpleStats.ContentInventory`   |
-| Publishing calendar  | `SimpleStats.PublishingCalendar` |
-| Content locks        | `SimpleStats.ContentLocks`       |
-| Page freshness       | `SimpleStats.PageFreshness`      |
-| Event log            | `SimpleStats.EventLog`           |
-| Orders and revenue   | `SimpleStats.OrdersRevenue`      |
-| Customers            | `SimpleStats.Customers`          |
-| Member registrations | `SimpleStats.Members`            |
-| Consents             | `SimpleStats.Consents`           |
-| Email summary        | `SimpleStats.EmailSummary`       |
-| Recipient lists      | `SimpleStats.RecipientLists`     |
-| Web page stats       | `SimpleStats.WebPageStats`       |
-| Export               | `SimpleStats.Export`             |
+| Permission             | Code name                        |
+| ---------------------- | -------------------------------- |
+| Activity counts        | `SimpleStats.ActivityCounts`     |
+| Top pages              | `SimpleStats.TopPages`           |
+| New contacts           | `SimpleStats.NewContacts`        |
+| Form submissions       | `SimpleStats.FormSubmissions`    |
+| Content inventory      | `SimpleStats.ContentInventory`   |
+| Publishing calendar    | `SimpleStats.PublishingCalendar` |
+| Content locks          | `SimpleStats.ContentLocks`       |
+| Page freshness         | `SimpleStats.PageFreshness`      |
+| Reusable content usage | `SimpleStats.ReusableUsage`      |
+| Event log              | `SimpleStats.EventLog`           |
+| Orders and revenue     | `SimpleStats.OrdersRevenue`      |
+| Customers              | `SimpleStats.Customers`          |
+| Member registrations   | `SimpleStats.Members`            |
+| Consents               | `SimpleStats.Consents`           |
+| Email summary          | `SimpleStats.EmailSummary`       |
+| Recipient lists        | `SimpleStats.RecipientLists`     |
+| Web page stats         | `SimpleStats.WebPageStats`       |
+| Export                 | `SimpleStats.Export`             |
 
 The **Export** permission only hides the buttons. The CSV is built in the browser from the data the report already shows, so a role that can see a report can still copy its numbers. It is not data protection.
 
@@ -280,6 +281,24 @@ Shows which published pages people still read but nobody has updated for a long 
 
 Visits need activity tracking and the visitor's cookie consent, so a page with no visits may only be missing tracking. Contact and activity cleanup deletes old visits.
 
+### Reusable content usage
+
+Shows which reusable items are used the most, and where, so editors know which items affect many pages and emails before they change or delete them. The opposite of "Unused reusable items" in "Content inventory". Current state (no date range).
+
+- **Definitions**
+  - **Usage** - a content item that references the reusable item, in any language or version: through the content item selector or rich text editor (in content type fields or Page and Email Builder component properties), or through custom components with a [reference extractor](https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-form-components/ui-form-component-reference-extractors). One referencing item counts once, whatever its number of languages, versions and references. References that exist only in code are not tracked. "Content inventory" uses the same definition, so used + unused items = all reusable items.
+  - **Where** - the kind of the referencing item: pages, emails, reusable items or headless items.
+  - **Used once** - exactly one usage (the item may not need to be reusable).
+- **KPIs** - reusable items (with total usages), used items (share of reusable items), used once, and unused.
+- **Filters** - **Content type** (all reusable content types, or one with items). **Open Content inventory** opens "Content inventory", which lists the unused items (shown with the **Content inventory** permission).
+- **Tiles**
+  - "Most used items" - bar chart of usages, or a table (item, content type, channel, pages, emails, reusable items, headless items, total usages, last modified), most used first. The **Channel** column shows **Content hub - _workspace display name_**. Click an item to open it in the **Content hub**; its **Used in** tab lists where it is used. The list shows up to 25 items; the KPIs count all.
+  - "Usage distribution" - reusable items with 0, 1, 2–5, 6–20 and over 20 usages, as columns or a table.
+  - "By content type" - table of usages, items and used items per reusable content type, most usages first. Click a type to open it in the **Content types** application.
+- Each tile has its own CSV export.
+
+Name and last change come from the item's most recently changed language variant. Items in all workspaces are counted. Changing a reusable item does not change emails that were already sent.
+
 ### Orders and revenue
 
 Shows [digital commerce](https://docs.kentico.com/documentation/business-users/manage-commerce-stores) orders and revenue over time, orders by status, and the products with the most revenue.
@@ -338,7 +357,7 @@ The event log keeps at most the number of events in **Settings → System → Ev
 
 ### Dates and caching
 
-Time-based reports use the server date. Results of all reports are cached for 5 minutes, so new activities, contacts, submissions, content changes, content locks, page visits, events, orders, customers, members, consent agreements and recipient list subscriptions can take a few minutes to appear. Select **Refresh** to load the latest numbers.
+Time-based reports use the server date. Results of all reports are cached for 5 minutes, so new activities, contacts, submissions, content changes, content locks, content item references, page visits, events, orders, customers, members, consent agreements and recipient list subscriptions can take a few minutes to appear. Select **Refresh** to load the latest numbers.
 
 ## Audit CSV exports
 
@@ -393,23 +412,24 @@ A handler exception is logged and does not fail the export. Handlers run one aft
 
 `ExportName` is the file-name prefix (the part before the first `_`), except `customers-active`, whose file name also has the activity window (for example `customers-active-30d_...`):
 
-| Report               | `ExportName` values                                                                                                                                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Activity counts      | `activity-counts`                                                                                                                                                                                            |
-| Top pages            | `top-pages`                                                                                                                                                                                                  |
-| New contacts         | `new-contacts`, `new-contacts-share`                                                                                                                                                                         |
-| Form submissions     | `form-submissions`, `form-submissions-by-form`                                                                                                                                                               |
-| Member registrations | `members-growth`, `members-sign-in-type`, `members-by-role`                                                                                                                                                  |
-| Consents             | `consents-events`, `consents-agreed-contacts`, `consents`, `consents-text-versions`                                                                                                                          |
-| Email summary        | `email-summary-activity`, `email-summary-emails`, `email-summary-performers`, `email-summary-automated`                                                                                                      |
-| Recipient lists      | `recipient-lists-events`, `recipient-lists-subscribers`, `recipient-lists`, `recipient-lists-status`                                                                                                         |
-| Content inventory    | `content-inventory-types`, `content-inventory-status`, `content-inventory-age`, `content-inventory-oldest`, `content-inventory-workflow`, `content-inventory-unused-reusable`, `content-inventory-languages` |
-| Publishing calendar  | `publishing-calendar-upcoming`, `publishing-calendar-recent`                                                                                                                                                 |
-| Content locks        | `content-locks-items`, `content-locks-users`                                                                                                                                                                 |
-| Page freshness       | `page-freshness-stale-popular`, `page-freshness-age`, `page-freshness-no-visits`                                                                                                                             |
-| Orders and revenue   | `orders-revenue`, `orders-by-status`, `orders-top-products`                                                                                                                                                  |
-| Customers            | `customers-growth`, `customers-active`, `customers-by-country`, `customers-top-states`, `customers-top-by-revenue`, `customers-top-by-orders`, `customers-top-by-items`                                      |
-| Event log            | `event-log`, `event-log-sources`, `event-log-sources-xperience`, `event-log-sources-custom`, `event-log-codes`, `event-log-users`                                                                            |
+| Report                 | `ExportName` values                                                                                                                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Activity counts        | `activity-counts`                                                                                                                                                                                            |
+| Top pages              | `top-pages`                                                                                                                                                                                                  |
+| New contacts           | `new-contacts`, `new-contacts-share`                                                                                                                                                                         |
+| Form submissions       | `form-submissions`, `form-submissions-by-form`                                                                                                                                                               |
+| Member registrations   | `members-growth`, `members-sign-in-type`, `members-by-role`                                                                                                                                                  |
+| Consents               | `consents-events`, `consents-agreed-contacts`, `consents`, `consents-text-versions`                                                                                                                          |
+| Email summary          | `email-summary-activity`, `email-summary-emails`, `email-summary-performers`, `email-summary-automated`                                                                                                      |
+| Recipient lists        | `recipient-lists-events`, `recipient-lists-subscribers`, `recipient-lists`, `recipient-lists-status`                                                                                                         |
+| Content inventory      | `content-inventory-types`, `content-inventory-status`, `content-inventory-age`, `content-inventory-oldest`, `content-inventory-workflow`, `content-inventory-unused-reusable`, `content-inventory-languages` |
+| Publishing calendar    | `publishing-calendar-upcoming`, `publishing-calendar-recent`                                                                                                                                                 |
+| Content locks          | `content-locks-items`, `content-locks-users`                                                                                                                                                                 |
+| Page freshness         | `page-freshness-stale-popular`, `page-freshness-age`, `page-freshness-no-visits`                                                                                                                             |
+| Reusable content usage | `reusable-usage-items`, `reusable-usage-distribution`, `reusable-usage-types`                                                                                                                                |
+| Orders and revenue     | `orders-revenue`, `orders-by-status`, `orders-top-products`                                                                                                                                                  |
+| Customers              | `customers-growth`, `customers-active`, `customers-by-country`, `customers-top-states`, `customers-top-by-revenue`, `customers-top-by-orders`, `customers-top-by-items`                                      |
+| Event log              | `event-log`, `event-log-sources`, `event-log-sources-xperience`, `event-log-sources-custom`, `event-log-codes`, `event-log-users`                                                                            |
 
 ## Data retention
 

@@ -14,6 +14,7 @@ import {
   contentKindOptions,
   fitContentChannel,
 } from '../shared/contentKinds';
+import { usageHint } from '../shared/contentUsage';
 import { CoverageBarChart, CoverageCaptions } from '../shared/CoverageBarChart';
 import { CoverageTable } from '../shared/CoverageTable';
 import {
@@ -164,9 +165,6 @@ const statusHint =
 
 const workflowHint =
   'The time an item entered its step is not stored, so days count from the last change of the language variant.';
-
-const usageHint =
-  'An item counts as used when another content item references it, in any language or version: through the content item selector or rich text editor (in content type fields or Page and Email Builder component properties), or through custom components with a reference extractor. References that exist only in code are not tracked.';
 
 function toFilter(report: ContentInventoryResult): StatsSnapshotFilter {
   return { kind: report.kind, channelId: report.channelId };

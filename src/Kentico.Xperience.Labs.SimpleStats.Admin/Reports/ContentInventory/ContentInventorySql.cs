@@ -41,8 +41,8 @@ internal static class ContentInventorySql
     /// <summary>1 to read unused reusable items, 0 to return them empty (the kind or channel filter excludes reusable items).</summary>
     public const string IncludeUnusedParameter = "@IncludeUnused";
 
-    /// <summary>Content type type of reusable items (<c>ClassContentTypeType.REUSABLE</c>).</summary>
-    public const string ReusableKindParameter = "@ReusableKind";
+    /// <inheritdoc cref="StatsContentUsageSql.ReusableKindParameter"/>
+    public const string ReusableKindParameter = StatsContentUsageSql.ReusableKindParameter;
 
     // 1. Every content type of the kind with its item count (0 included).
     // The channel condition is part of the LEFT JOIN, so types without items in the channel stay listed with 0.
@@ -152,16 +152,11 @@ internal static class ContentInventorySql
         ORDER BY M.[ContentItemLanguageMetadataModifiedWhen], M.[ContentItemLanguageMetadataID];
         """;
 
-    // Reusable items that no content item references (content item selector fields and Page Builder widget properties
-    // are stored in CMS_ContentItemReference, from any language and version of the referencing item).
-    private const string UnusedWhere = """
+    // Reusable items that no content item references. Same definition as the reusable content usage report (see StatsContentUsageSql).
+    private const string UnusedWhere = $"""
         WHERE @IncludeUnused = 1
-            AND C.[ClassType] = @ClassType
-            AND C.[ClassContentTypeType] = @ReusableKind
-            AND NOT EXISTS (
-                SELECT 1 FROM [CMS_ContentItemReference] R
-                WHERE R.[ContentItemReferenceTargetItemID] = I.[ContentItemID]
-            )
+            AND {StatsContentUsageSql.ReusableCondition}
+            AND {StatsContentUsageSql.UnusedCondition}
         """;
 
     // 7. Unused reusable items per content type.
@@ -174,7 +169,7 @@ internal static class ContentInventorySql
         """;
 
     // 8. Unused reusable items, least recently modified first. Name and date come from the most recently modified variant.
-    private const string UnusedItemsQuery = """
+    private const string UnusedItemsQuery = $$"""
         SELECT TOP (@Limit)
             I.[ContentItemID],
             I.[ContentItemWorkspaceID] AS [WorkspaceID],
@@ -184,16 +179,7 @@ internal static class ContentInventorySql
             N.[ModifiedWhen]
         FROM [CMS_ContentItem] I
         INNER JOIN [CMS_Class] C ON C.[ClassID] = I.[ContentItemContentTypeID]
-        OUTER APPLY (
-            SELECT TOP (1)
-                L.[ContentLanguageName],
-                M.[ContentItemLanguageMetadataDisplayName] AS [DisplayName],
-                M.[ContentItemLanguageMetadataModifiedWhen] AS [ModifiedWhen]
-            FROM [CMS_ContentItemLanguageMetadata] M
-            INNER JOIN [CMS_ContentLanguage] L ON L.[ContentLanguageID] = M.[ContentItemLanguageMetadataContentLanguageID]
-            WHERE M.[ContentItemLanguageMetadataContentItemID] = I.[ContentItemID]
-            ORDER BY M.[ContentItemLanguageMetadataModifiedWhen] DESC
-        ) N
+        {{StatsContentUsageSql.LatestVariantApply}}
         {4}
         ORDER BY N.[ModifiedWhen], I.[ContentItemID];
         """;

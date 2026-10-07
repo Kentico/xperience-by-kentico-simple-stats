@@ -66,14 +66,8 @@ internal sealed class ContentInventoryService(
         };
     }
 
-    /// <summary>
-    /// Path of the "General" tab of the content type in the Content types application.
-    /// </summary>
-    private string? GetContentTypePath(int classId) =>
-        adminLinks.GetPath<ContentTypeGeneral>(new PageParameterValues
-        {
-            { typeof(ContentTypeEditSection), classId },
-        });
+    /// <inheritdoc cref="StatsContentItemPaths.GetContentTypePath"/>
+    private string? GetContentTypePath(int classId) => StatsContentItemPaths.GetContentTypePath(adminLinks, classId);
 
     /// <summary>
     /// Path of the "Steps" tab of the workflow in the Workflows application.
