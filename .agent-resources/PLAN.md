@@ -68,15 +68,15 @@ _Needs attention (current state)_
 
 _Publishing speed (date range)_
 
-- Published over time: first publishes vs updates per period, by type / kind / channel. Source: `ContentItemCommonDataFirstPublishedWhen` / `LastPublishedWhen`. Full history needs `CMS_ContentItemVersion` (only with content versioning enabled; 0 rows locally).
+- Published over time: first publishes vs updates per period, by type / kind / channel. Source: `ContentItemCommonDataFirstPublishedWhen` / `LastPublishedWhen`. Full history needs `CMS_ContentItemVersion` (only with content versioning enabled; 0 rows locally). Spec (with created over time, time to publish, updates from version history): `.agent-resources/REPORT-17-PUBLISHING-ACTIVITY.md`.
 - Created over time by content type (`CreatedWhen`).
 - Time to publish: median days from created to first published, per content type.
-- Editor contributions: created / modified / published per admin user. Own permission (per-user data).
+- Editor contributions: created / modified / published per admin user. Own permission (per-user data). Spec: `.agent-resources/REPORT-19-EDITOR-CONTRIBUTIONS.md`.
 
 _Quality and governance_
 
-- Tag coverage: untagged share per taxonomy field, top tags, unused tags. Smart folders often filter by tags. Source: `CMS_ContentItemTag` (155 rows locally), `CMS_Tag`, `CMS_Taxonomy`.
-- Outdated translations: language variants last modified before the default language variant (extends language coverage). Optional: AIRA translation task status (`CMS_TranslationTask`, 0 rows locally).
+- Tag coverage: untagged share per taxonomy field, top tags, unused tags. Smart folders often filter by tags. Source: `CMS_ContentItemTag` (155 rows locally), `CMS_Tag`, `CMS_Taxonomy`. Spec: `.agent-resources/REPORT-20-TAG-USAGE.md`.
+- Outdated translations: language variants last modified before the default language variant (extends language coverage). Optional: AIRA translation task status (`CMS_TranslationTask`, 0 rows locally). Spec (with missing; no AIRA tasks): `.agent-resources/REPORT-18-TRANSLATION-STATUS.md`.
 - SEO fields / image descriptions missing. _Uncertain: fields are project-specific (e.g. DancingGoat `SEOFields*`), would need configuration, conflicts with "no extension points"._
 
 _Content performance (content + activities)_
