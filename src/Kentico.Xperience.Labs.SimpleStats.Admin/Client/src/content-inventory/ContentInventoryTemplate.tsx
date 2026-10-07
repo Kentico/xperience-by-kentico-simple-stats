@@ -3,12 +3,17 @@ import {
   CalloutPlacementType,
   CalloutType,
   InfoCard,
-  NameToggleButton,
 } from '@kentico/xperience-admin-components';
 import React, { useCallback, useMemo, useState } from 'react';
 
 import { toAdminHref } from '../shared/adminLinks';
 import { AgedItemCaptions, AgedItemTable, toDaysRankedItems } from '../shared/AgedItemTable';
+import {
+  channelsForContentKind,
+  contentKindLabel,
+  contentKindOptions,
+  fitContentChannel,
+} from '../shared/contentKinds';
 import { CoverageBarChart, CoverageCaptions } from '../shared/CoverageBarChart';
 import { CoverageTable } from '../shared/CoverageTable';
 import {
@@ -22,7 +27,7 @@ import { formatShare, numberFormat } from '../shared/format';
 import { RankedBarChart } from '../shared/RankedBarChart';
 import { RankedTable } from '../shared/RankedTable';
 import { ShareTable } from '../shared/ShareTable';
-import { allKindsId, SnapshotFilterBar, SnapshotKindOptions } from '../shared/SnapshotFilterBar';
+import { SnapshotFilterBar } from '../shared/SnapshotFilterBar';
 import { StatsTile } from '../shared/StatsTile';
 import {
   StatsAgedItem,
@@ -103,31 +108,6 @@ interface ContentInventoryTemplateProps {
   readonly pagePath: string | null;
 }
 
-/** Labels of the content type types (`ClassContentTypeType` values), as named in the Content types application. */
-const kindLabels: Readonly<Record<string, string>> = {
-  Website: 'Pages',
-  Reusable: 'Reusable content',
-  Email: 'Emails',
-  Headless: 'Headless items',
-};
-
-/** Channel type (`ChannelType`) of the items of each kind. Reusable items have no channel. */
-const kindChannelTypes: Readonly<Record<string, string>> = {
-  Website: 'Website',
-  Email: 'Email',
-  Headless: 'Headless',
-};
-
-const kindItems: NameToggleButton[] = [
-  { id: allKindsId, label: 'All' },
-  { id: 'Website', label: 'Pages' },
-  { id: 'Reusable', label: 'Reusable' },
-  { id: 'Email', label: 'Emails' },
-  { id: 'Headless', label: 'Headless' },
-];
-
-const kinds: SnapshotKindOptions = { label: 'Content', items: kindItems };
-
 const contentTypeCaptions: StatsRankedCaptions = {
   label: 'Content type',
   secondaryLabel: 'Used for',
@@ -188,18 +168,6 @@ const workflowHint =
 const usageHint =
   'An item counts as used when another content item references it, in any language or version: through the content item selector or rich text editor (in content type fields or Page and Email Builder component properties), or through custom components with a reference extractor. References that exist only in code are not tracked.';
 
-function kindLabel(kind: string | null): string {
-  return kind ? (kindLabels[kind] ?? kind) : 'All';
-}
-
-function channelsForKind(
-  channels: readonly StatsChannelOption[],
-  kind: string | null,
-): readonly StatsChannelOption[] {
-  const type = kind ? kindChannelTypes[kind] : undefined;
-  return type ? channels.filter((channel) => channel.type === type) : [];
-}
-
 function toFilter(report: ContentInventoryResult): StatsSnapshotFilter {
   return { kind: report.kind, channelId: report.channelId };
 }
@@ -217,14 +185,12 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
   const [filter, setFilter] = useState<StatsSnapshotFilter>(() => toFilter(props.report));
 
   const channels = useMemo(
-    () => channelsForKind(props.channels, filter.kind),
+    () => channelsForContentKind(props.channels, filter.kind),
     [props.channels, filter.kind],
   );
 
   const handleFilterChange = (next: StatsSnapshotFilter) => {
-    // The channel filter applies only to pages, emails and headless items, with a channel of the matching type.
-    const fits = channelsForKind(props.channels, next.kind).some((c) => c.id === next.channelId);
-    const normalized = fits ? next : { ...next, channelId: null };
+    const normalized = fitContentChannel(props.channels, next);
     setFilter(normalized);
     void load(normalized);
   };
@@ -248,7 +214,7 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
     () =>
       report.byContentType.items.map((item) => ({
         ...item,
-        secondaryLabel: item.secondaryLabel ? kindLabel(item.secondaryLabel) : null,
+        secondaryLabel: item.secondaryLabel ? contentKindLabel(item.secondaryLabel) : null,
       })),
     [report.byContentType.items],
   );
@@ -277,7 +243,7 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
   const publishedShare = report.totalVariants > 0 ? published / report.totalVariants : 0;
 
   const kindText = report.byKind.items
-    .map((item) => `${numberFormat.format(item.value)} ${kindLabel(item.key).toLowerCase()}`)
+    .map((item) => `${numberFormat.format(item.value)} ${contentKindLabel(item.key).toLowerCase()}`)
     .join(' · ');
 
   const scheduledText = [
@@ -359,7 +325,7 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
       <SnapshotFilterBar
         filter={filter}
         onChange={handleFilterChange}
-        kinds={kinds}
+        kinds={contentKindOptions}
         channels={channels}
         onRefresh={handleRefresh}
         isLoading={isLoading}
@@ -371,7 +337,7 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
           caption="Content items"
           tooltip="Content items that match the filters. Page folders are not counted. Each item counts once, whatever the number of languages."
           text={numberFormat.format(report.totalItems)}
-          details={kindText || kindLabel(report.kind)}
+          details={kindText || contentKindLabel(report.kind)}
         />
         <InfoCard
           caption="Content types in use"

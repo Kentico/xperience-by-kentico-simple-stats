@@ -49,6 +49,28 @@ public class StatsSnapshotTests
         Assert.That(rejected, Is.EqualTo(new StatsSnapshotQuery("Website", null)));
     }
 
+    [TestCase(7, 7)]
+    [TestCase(90, 90)]
+    [TestCase(30, 30)]
+    [TestCase(14, 30)]
+    [TestCase(0, 30)]
+    [TestCase(-7, 30)]
+    [TestCase(null, 30)]
+    public void NormalizeWindow_KeepsSupportedWindowsOnly(int? window, int expected)
+    {
+        int normalized = new StatsSnapshotFilter { Window = window }.NormalizeWindow([7, 30, 90], 30);
+
+        Assert.That(normalized, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Window_IsNotPartOfTheQuery()
+    {
+        var query = new StatsSnapshotFilter { Kind = "website", ChannelId = 3, Window = 7 }.Normalize(kinds);
+
+        Assert.That(query, Is.EqualTo(new StatsSnapshotQuery("Website", 3)));
+    }
+
     [TestCase(3, 4, 1, 0.75)]
     [TestCase(0, 0, 0, 0)]
     [TestCase(5, 4, 0, 1)]

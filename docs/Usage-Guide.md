@@ -17,7 +17,7 @@ Reports are grouped into sections. Opening the application or a section opens it
 | -------- | ------------------------------------------------------------------------------------------ |
 | Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents |
 | Emails   | Email summary, Recipient lists                                                             |
-| Content  | Content inventory                                                                          |
+| Content  | Content inventory, Publishing calendar                                                     |
 | Commerce | Orders and revenue, Customers                                                              |
 | System   | Event log                                                                                  |
 
@@ -31,22 +31,23 @@ Sections have no permission of their own. A section is hidden when the role has 
   - One permission per report. The role sees only the reports it has a permission for. Other reports are hidden from the navigation and return an error if opened by URL.
   - **Export** - shows the **Export CSV** buttons in all reports the role can see. Without it, the buttons are hidden.
 
-| Permission           | Code name                      |
-| -------------------- | ------------------------------ |
-| Activity counts      | `SimpleStats.ActivityCounts`   |
-| Top pages            | `SimpleStats.TopPages`         |
-| New contacts         | `SimpleStats.NewContacts`      |
-| Form submissions     | `SimpleStats.FormSubmissions`  |
-| Content inventory    | `SimpleStats.ContentInventory` |
-| Event log            | `SimpleStats.EventLog`         |
-| Orders and revenue   | `SimpleStats.OrdersRevenue`    |
-| Customers            | `SimpleStats.Customers`        |
-| Member registrations | `SimpleStats.Members`          |
-| Consents             | `SimpleStats.Consents`         |
-| Email summary        | `SimpleStats.EmailSummary`     |
-| Recipient lists      | `SimpleStats.RecipientLists`   |
-| Web page stats       | `SimpleStats.WebPageStats`     |
-| Export               | `SimpleStats.Export`           |
+| Permission           | Code name                        |
+| -------------------- | -------------------------------- |
+| Activity counts      | `SimpleStats.ActivityCounts`     |
+| Top pages            | `SimpleStats.TopPages`           |
+| New contacts         | `SimpleStats.NewContacts`        |
+| Form submissions     | `SimpleStats.FormSubmissions`    |
+| Content inventory    | `SimpleStats.ContentInventory`   |
+| Publishing calendar  | `SimpleStats.PublishingCalendar` |
+| Event log            | `SimpleStats.EventLog`           |
+| Orders and revenue   | `SimpleStats.OrdersRevenue`      |
+| Customers            | `SimpleStats.Customers`          |
+| Member registrations | `SimpleStats.Members`            |
+| Consents             | `SimpleStats.Consents`           |
+| Email summary        | `SimpleStats.EmailSummary`       |
+| Recipient lists      | `SimpleStats.RecipientLists`     |
+| Web page stats       | `SimpleStats.WebPageStats`       |
+| Export               | `SimpleStats.Export`             |
 
 The **Export** permission only hides the buttons. The CSV is built in the browser from the data the report already shows, so a role that can see a report can still copy its numbers. It is not data protection.
 
@@ -221,6 +222,24 @@ Shows the current state of content items (no date range, not a trend): items by 
 
 Page folders are not counted. Items in all workspaces are counted. "Last change" is the modified time of the language variant's latest version. Items open where they are edited: reusable items in the **Content hub**, pages, emails and headless items in their channel application.
 
+### Publishing calendar
+
+Shows what goes live, comes down or is sent soon, and what was published recently. Current state (no date range).
+
+- **Definitions**
+  - **Scheduled publish** / **unpublish** - a language variant with a [scheduled publish or unpublish](https://docs.kentico.com/documentation/business-users/content-hub/content-items#scheduled-publishing) time. A variant with both counts once in each.
+  - **Scheduled send** - a regular email scheduled to be sent (its send status is **Scheduled**), at its send time. The name, language and channel are those of the email (the variant in the email channel's primary language first). Other email purposes (automation, form autoresponders) are not scheduled this way. Without the email tables, there are no sends and the rest of the report works.
+  - **Upcoming** - scheduled from now to the end of the window (the next 7, 30 or 90 days).
+  - **Recently published** - language variants last published in the last 7 days (the latest version's last publish time).
+- **KPIs** - scheduled to publish, scheduled to unpublish and scheduled sends in the window, and recently published.
+- **Filters** - **Scheduled in the next** 7, 30 or 90 days (default 30), and content (all, pages, reusable or emails) and channel (website or email channels) as in "Content inventory". Headless items have no scheduled publish or unpublish, so the report does not include them. Sends are included with **All** and **Emails** (and an email channel), not with pages, reusable or headless. The window applies to the upcoming KPIs and tile only.
+- **Tiles**
+  - "Upcoming" - stacked column chart of publishes, unpublishes and sends per day in the window, or a table of the events soonest first (time, action, item, content type, language, channel, last modified by).
+  - "Recently published" - table, newest first.
+  - Reusable items have no channel, so the **Channel** column (in the tables and CSV exports) shows **Content hub - _workspace display name_**, or **Content hub** when the item has no workspace. Lists show up to 50 rows; the KPIs count all. Click an item to open it where it is edited (emails open in their email channel). Each tile has its own CSV export.
+
+Publishes and unpublishes count per language variant; sends count per email. Times are server time. Editing a scheduled item cancels its schedule, so it leaves the report. Items in all workspaces are counted; page folders are not.
+
 ### Orders and revenue
 
 Shows [digital commerce](https://docs.kentico.com/documentation/business-users/manage-commerce-stores) orders and revenue over time, orders by status, and the products with the most revenue.
@@ -345,6 +364,7 @@ A handler exception is logged and does not fail the export. Handlers run one aft
 | Email summary        | `email-summary-activity`, `email-summary-emails`, `email-summary-performers`, `email-summary-automated`                                                                                                      |
 | Recipient lists      | `recipient-lists-events`, `recipient-lists-subscribers`, `recipient-lists`, `recipient-lists-status`                                                                                                         |
 | Content inventory    | `content-inventory-types`, `content-inventory-status`, `content-inventory-age`, `content-inventory-oldest`, `content-inventory-workflow`, `content-inventory-unused-reusable`, `content-inventory-languages` |
+| Publishing calendar  | `publishing-calendar-upcoming`, `publishing-calendar-recent`                                                                                                                                                 |
 | Orders and revenue   | `orders-revenue`, `orders-by-status`, `orders-top-products`                                                                                                                                                  |
 | Customers            | `customers-growth`, `customers-active`, `customers-by-country`, `customers-top-states`, `customers-top-by-revenue`, `customers-top-by-orders`, `customers-top-by-items`                                      |
 | Event log            | `event-log`, `event-log-sources`, `event-log-sources-xperience`, `event-log-sources-custom`, `event-log-codes`, `event-log-users`                                                                            |

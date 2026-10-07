@@ -13,7 +13,7 @@ using Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 
 /// <summary>
-/// Content reports: content inventory.
+/// Content reports: content inventory and publishing calendar.
 /// </summary>
 public sealed class StatsContentSection(
     IUIPermissionEvaluator permissionEvaluator,

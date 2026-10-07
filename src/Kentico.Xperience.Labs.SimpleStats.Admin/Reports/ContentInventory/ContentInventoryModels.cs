@@ -91,12 +91,12 @@ public sealed record UnusedReusableSummary(int Count, int ReusableItems, StatsRa
 /// <param name="DisplayName">Content type display name.</param>
 /// <param name="Kind">Content type type (<c>ClassContentTypeType</c>).</param>
 /// <param name="ItemCount">Items of the type that match the filters.</param>
-public sealed record ContentTypeRow(int ClassId, string CodeName, string DisplayName, string Kind, int ItemCount);
+internal sealed record ContentTypeRow(int ClassId, string CodeName, string DisplayName, string Kind, int ItemCount);
 
 /// <summary>
 /// Content language with the number of filtered items that have a variant in it.
 /// </summary>
-public sealed record ContentLanguageRow(int LanguageId, string CodeName, string DisplayName, bool IsDefault, int ItemCount);
+internal sealed record ContentLanguageRow(int LanguageId, string CodeName, string DisplayName, bool IsDefault, int ItemCount);
 
 /// <summary>
 /// Language variants with the same latest version status and workflow step.
@@ -109,7 +109,7 @@ public sealed record ContentLanguageRow(int LanguageId, string CodeName, string 
 /// <param name="VariantCount">Language variants.</param>
 /// <param name="ScheduledPublish">Of <paramref name="VariantCount"/>, variants with a scheduled publish.</param>
 /// <param name="ScheduledUnpublish">Of <paramref name="VariantCount"/>, variants with a scheduled unpublish.</param>
-public sealed record ContentStatusRow(
+internal sealed record ContentStatusRow(
     int VersionStatus,
     int? StepId,
     string? StepDisplayName,
@@ -122,7 +122,7 @@ public sealed record ContentStatusRow(
 /// <summary>
 /// Language variants per age of the last change.
 /// </summary>
-public sealed record ContentAgeRow(int Under3Months, int Months3To6, int Months6To12, int Over12Months)
+internal sealed record ContentAgeRow(int Under3Months, int Months3To6, int Months6To12, int Over12Months)
 {
     public static ContentAgeRow Empty { get; } = new(0, 0, 0, 0);
 }
@@ -138,7 +138,7 @@ public sealed record ContentAgeRow(int Under3Months, int Months3To6, int Months6
 /// <param name="StepDisplayName">Workflow step display name, or <c>null</c>.</param>
 /// <param name="WorkflowId">Workflow ID, or <c>null</c>.</param>
 /// <param name="WorkflowDisplayName">Workflow display name, or <c>null</c>.</param>
-public sealed record ContentVariantRow(
+internal sealed record ContentVariantRow(
     int VariantId,
     string DisplayName,
     string ContentType,
@@ -159,47 +159,16 @@ public sealed record ContentVariantRow(
 /// <param name="DisplayName">Display name of the most recently changed variant (or the item name).</param>
 /// <param name="ContentType">Content type display name.</param>
 /// <param name="ModifiedWhen">Last change of any variant, or <c>null</c> when the item has no variant.</param>
-public sealed record UnusedItemRow(int ItemId, string DisplayName, string ContentType, DateTime? ModifiedWhen)
+internal sealed record UnusedItemRow(int ItemId, string DisplayName, string ContentType, DateTime? ModifiedWhen)
 {
     /// <inheritdoc cref="ContentItemLink"/>
     public ContentItemLink? Link { get; init; }
 }
 
 /// <summary>
-/// What is needed to link a content item in the admin.
-/// </summary>
-/// <param name="Location">Application the item is edited in.</param>
-/// <param name="ContainerId">
-/// Workspace ID (<see cref="ContentItemLocation.ContentHub"/>), <c>WebsiteChannelID</c>, <c>EmailChannelID</c> or <c>HeadlessChannelID</c>.
-/// </param>
-/// <param name="ObjectId">
-/// Content item ID (<see cref="ContentItemLocation.ContentHub"/>), <c>WebPageItemID</c>, <c>EmailConfigurationID</c> or <c>HeadlessItemID</c>.
-/// </param>
-/// <param name="LanguageName">Code name of the language variant to open.</param>
-public sealed record ContentItemLink(ContentItemLocation Location, int ContainerId, int ObjectId, string LanguageName);
-
-/// <summary>
-/// Application a content item is edited in.
-/// </summary>
-public enum ContentItemLocation
-{
-    /// <summary>Reusable item in the Content hub (by workspace).</summary>
-    ContentHub,
-
-    /// <summary>Page in a website channel.</summary>
-    WebPage,
-
-    /// <summary>Email in an email channel.</summary>
-    Email,
-
-    /// <summary>Headless item in a headless channel.</summary>
-    Headless,
-}
-
-/// <summary>
 /// Aggregates read by <see cref="IContentInventoryRepository"/>.
 /// </summary>
-public sealed record ContentInventoryData(
+internal sealed record ContentInventoryData(
     IReadOnlyList<ContentTypeRow> ContentTypes,
     IReadOnlyList<ContentLanguageRow> Languages,
     IReadOnlyList<ContentStatusRow> Statuses)

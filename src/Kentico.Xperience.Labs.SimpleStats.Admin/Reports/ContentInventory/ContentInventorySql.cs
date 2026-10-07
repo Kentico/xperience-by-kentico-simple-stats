@@ -1,3 +1,5 @@
+using Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
+
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
 
 /// <summary>
@@ -5,6 +7,7 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
 /// Only constant SQL fragments are combined; all values are parameters.
 /// </summary>
 /// <remarks>
+/// Items, variants, filters and link columns come from <see cref="StatsContentSql"/>.
 /// Items are <c>CMS_ContentItem</c> rows whose class is a content type (<c>ClassType</c> = <see cref="ClassTypeParameter"/>).
 /// Items without a content type (page folders in website channels) are not counted.
 /// The optional filters are the content type type (<c>CMS_Class.ClassContentTypeType</c>) and
@@ -14,9 +17,9 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
 /// </remarks>
 internal static class ContentInventorySql
 {
-    public const string ClassTypeParameter = "@ClassType";
-    public const string KindParameter = "@Kind";
-    public const string ChannelParameter = "@ChannelID";
+    public const string ClassTypeParameter = StatsContentSql.ClassTypeParameter;
+    public const string KindParameter = StatsContentSql.KindParameter;
+    public const string ChannelParameter = StatsContentSql.ChannelParameter;
 
     /// <summary>Modified on or after this time: under 3 months old.</summary>
     public const string Age3Parameter = "@Age3";
@@ -38,19 +41,6 @@ internal static class ContentInventorySql
 
     /// <summary>Content type type of reusable items (<c>ClassContentTypeType.REUSABLE</c>).</summary>
     public const string ReusableKindParameter = "@ReusableKind";
-
-    // Filtered items; {0} = channel condition, {1} = kind condition.
-    private const string ItemsWhere = """
-        WHERE C.[ClassType] = @ClassType
-            AND C.[ClassContentTypeType] IS NOT NULL{1}{0}
-        """;
-
-    // Filtered language variants of the filtered items.
-    private const string VariantsFrom = """
-        FROM [CMS_ContentItemLanguageMetadata] M
-        INNER JOIN [CMS_ContentItem] I ON I.[ContentItemID] = M.[ContentItemLanguageMetadataContentItemID]
-        INNER JOIN [CMS_Class] C ON C.[ClassID] = I.[ContentItemContentTypeID]
-        """;
 
     // 1. Every content type of the kind with its item count (0 included).
     // The channel condition is part of the LEFT JOIN, so types without items in the channel stay listed with 0.
@@ -209,49 +199,6 @@ internal static class ContentInventorySql
         ORDER BY N.[ModifiedWhen], I.[ContentItemID];
         """;
 
-    // Where each listed item is edited in the admin: the workspace of reusable items, or the page, email or headless item
-    // of the item and its channel (see StatsChannelItemPaths). TOP (1) keeps one row per variant if data is inconsistent.
-    private const string LinkColumns = """
-        CASE WHEN I.[ContentItemIsReusable] = 1 THEN I.[ContentItemWorkspaceID] END AS [WorkspaceID],
-                    P.[WebPageItemWebsiteChannelID] AS [WebsiteChannelID],
-                    P.[WebPageItemID],
-                    E.[EmailConfigurationEmailChannelID] AS [EmailChannelID],
-                    E.[EmailConfigurationID],
-                    H.[HeadlessItemHeadlessChannelID] AS [HeadlessChannelID],
-                    H.[HeadlessItemID],
-        """;
-
-    private const string LinkApply = """
-        OUTER APPLY (
-                    SELECT TOP (1) W1.[WebPageItemID], W1.[WebPageItemWebsiteChannelID]
-                    FROM [CMS_WebPageItem] W1
-                    WHERE W1.[WebPageItemContentItemID] = I.[ContentItemID]
-                    ORDER BY W1.[WebPageItemID]
-                ) P
-                OUTER APPLY (
-                    SELECT TOP (1) E1.[EmailConfigurationID], E1.[EmailConfigurationEmailChannelID]
-                    FROM [EmailLibrary_EmailConfiguration] E1
-                    WHERE E1.[EmailConfigurationContentItemID] = I.[ContentItemID]
-                    ORDER BY E1.[EmailConfigurationID]
-                ) E
-                OUTER APPLY (
-                    SELECT TOP (1) H1.[HeadlessItemID], H1.[HeadlessItemHeadlessChannelID]
-                    FROM [CMS_HeadlessItem] H1
-                    WHERE H1.[HeadlessItemContentItemID] = I.[ContentItemID]
-                    ORDER BY H1.[HeadlessItemID]
-                ) H
-        """;
-
-    private const string ChannelCondition = """
-
-            AND I.[ContentItemChannelID] = @ChannelID
-        """;
-
-    private const string KindCondition = """
-
-            AND C.[ClassContentTypeType] = @Kind
-        """;
-
     /// <summary>
     /// Returns the batch. Add <see cref="KindParameter"/> when <paramref name="hasKind"/> and
     /// <see cref="ChannelParameter"/> when <paramref name="hasChannel"/>; all other parameters are always used.
@@ -262,11 +209,16 @@ internal static class ContentInventorySql
     /// </remarks>
     public static string Build(bool hasKind, bool hasChannel)
     {
-        string channel = hasChannel ? ChannelCondition : string.Empty;
-        string kind = hasKind ? KindCondition : string.Empty;
-        string itemsWhere = string.Format(null, ItemsWhere, channel, kind);
-
-        object[] args = [channel, kind, VariantsFrom, itemsWhere, UnusedWhere, LinkColumns, LinkApply];
+        object[] args =
+        [
+            StatsContentSql.ChannelCondition(hasChannel),
+            StatsContentSql.KindCondition(hasKind),
+            StatsContentSql.VariantsFrom,
+            StatsContentSql.ItemsWhere(hasKind, hasChannel),
+            UnusedWhere,
+            StatsContentSql.LinkColumns,
+            StatsContentSql.LinkApply,
+        ];
 
         return string.Join(
             Environment.NewLine,

@@ -186,7 +186,7 @@ public class StatsExportEventTests
             .Select(page => page.Type)
             .ToList();
 
-        Assert.That(reportPages, Has.Count.EqualTo(12));
+        Assert.That(reportPages, Has.Count.EqualTo(13));
         Assert.Multiple(() =>
         {
             foreach (var type in reportPages)

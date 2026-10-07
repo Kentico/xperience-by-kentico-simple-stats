@@ -12,21 +12,11 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
 /// </summary>
 internal static class ContentInventoryReportBuilder
 {
-    /// <summary>
-    /// Content type types the kind filter supports (<see cref="ClassContentTypeType"/>).
-    /// </summary>
-    public static IReadOnlyList<string> Kinds { get; } =
-    [
-        ClassContentTypeType.WEBSITE,
-        ClassContentTypeType.REUSABLE,
-        ClassContentTypeType.EMAIL,
-        ClassContentTypeType.HEADLESS,
-    ];
+    /// <inheritdoc cref="StatsContentKinds.Kinds"/>
+    public static IReadOnlyList<string> Kinds => StatsContentKinds.Kinds;
 
-    /// <summary>
-    /// Channel types in the channel filter, in this order.
-    /// </summary>
-    public static IReadOnlyList<ChannelType> ChannelTypes { get; } = [ChannelType.Website, ChannelType.Email, ChannelType.Headless];
+    /// <inheritdoc cref="StatsContentKinds.ChannelTypes"/>
+    public static IReadOnlyList<ChannelType> ChannelTypes => StatsContentKinds.ChannelTypes;
 
     /// <summary>
     /// Days a language variant can wait unchanged in a workflow step before it counts as waiting too long.
@@ -51,25 +41,12 @@ internal static class ContentInventoryReportBuilder
     public const string Months6To12Key = "6-12-months";
     public const string Over12MonthsKey = "over-12-months";
 
-    /// <summary>
-    /// Returns the channel type items of a kind are in, or <c>null</c> for kinds without a channel (reusable) and for all kinds.
-    /// </summary>
-    public static ChannelType? GetChannelType(string? kind) =>
-        kind switch
-        {
-            ClassContentTypeType.WEBSITE => ChannelType.Website,
-            ClassContentTypeType.EMAIL => ChannelType.Email,
-            ClassContentTypeType.HEADLESS => ChannelType.Headless,
-            _ => null,
-        };
+    /// <inheritdoc cref="StatsContentKinds.GetChannelType"/>
+    public static ChannelType? GetChannelType(string? kind) => StatsContentKinds.GetChannelType(kind);
 
-    /// <summary>
-    /// Returns <c>true</c> when the channel exists and fits the kind: the channel filter applies only to
-    /// pages, emails and headless items, and only with a channel of the matching type.
-    /// </summary>
+    /// <inheritdoc cref="StatsContentKinds.IsChannelAllowed"/>
     public static bool IsChannelAllowed(string? kind, int channelId, IEnumerable<StatsChannelOption> channels) =>
-        GetChannelType(kind) is ChannelType type
-        && channels.Any(c => c.Id == channelId && string.Equals(c.Type, type.ToString(), StringComparison.Ordinal));
+        StatsContentKinds.IsChannelAllowed(kind, channelId, channels);
 
     /// <summary>
     /// Returns <c>true</c> when the filters can match reusable items (all kinds or reusable, no channel).

@@ -23,6 +23,9 @@ public static class StatsPermissions
     public const string CONTENT_INVENTORY = PREFIX + "ContentInventory";
     public const string CONTENT_INVENTORY_DISPLAY_NAME = "Content inventory";
 
+    public const string PUBLISHING_CALENDAR = PREFIX + "PublishingCalendar";
+    public const string PUBLISHING_CALENDAR_DISPLAY_NAME = "Publishing calendar";
+
     public const string EVENT_LOG = PREFIX + "EventLog";
     public const string EVENT_LOG_DISPLAY_NAME = "Event log";
 

@@ -188,7 +188,7 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
         int workflowOrdinal = withWorkflow ? reader.GetOrdinal("WorkflowID") : -1;
         int workflowNameOrdinal = withWorkflow ? reader.GetOrdinal("WorkflowDisplayName") : -1;
         int overdueOrdinal = withWorkflow ? reader.GetOrdinal("OverdueCount") : -1;
-        var links = LinkOrdinals.From(reader, withChannels: true);
+        var links = StatsContentLinkReader.From(reader, withChannels: true);
 
         var rows = new List<ContentVariantRow>();
         int overdue = 0;
@@ -201,7 +201,7 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
                 reader.GetString(languageOrdinal),
                 reader.GetDateTime(modifiedOrdinal))
             {
-                Link = ReadLink(reader, links),
+                Link = links.Read(reader),
             };
 
             if (withWorkflow)
@@ -251,7 +251,7 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
         int typeOrdinal = reader.GetOrdinal("ClassDisplayName");
         int modifiedOrdinal = reader.GetOrdinal("ModifiedWhen");
 
-        var links = LinkOrdinals.From(reader, withChannels: false);
+        var links = StatsContentLinkReader.From(reader, withChannels: false);
 
         var rows = new List<UnusedItemRow>();
         while (await reader.ReadAsync(cancellationToken))
@@ -262,73 +262,10 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
                 reader.IsDBNull(typeOrdinal) ? string.Empty : reader.GetString(typeOrdinal),
                 reader.IsDBNull(modifiedOrdinal) ? null : reader.GetDateTime(modifiedOrdinal))
             {
-                Link = ReadLink(reader, links),
+                Link = links.Read(reader),
             });
         }
 
         return rows;
-    }
-
-
-    /// <summary>
-    /// Returns where the item is edited: the Content hub for reusable items (they have a workspace), else its page, email
-    /// or headless item. <c>null</c> when none is known or the variant has no language.
-    /// </summary>
-    private static ContentItemLink? ReadLink(DbDataReader reader, LinkOrdinals links)
-    {
-        if (reader.IsDBNull(links.Language))
-        {
-            return null;
-        }
-
-        string language = reader.GetString(links.Language);
-
-        int? Get(int ordinal) => ordinal < 0 || reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
-
-        if (Get(links.Workspace) is int workspaceId)
-        {
-            return new(ContentItemLocation.ContentHub, workspaceId, reader.GetInt32(links.Item), language);
-        }
-        if (Get(links.WebsiteChannel) is int websiteChannelId && Get(links.WebPage) is int webPageId)
-        {
-            return new(ContentItemLocation.WebPage, websiteChannelId, webPageId, language);
-        }
-        if (Get(links.EmailChannel) is int emailChannelId && Get(links.Email) is int emailId)
-        {
-            return new(ContentItemLocation.Email, emailChannelId, emailId, language);
-        }
-        if (Get(links.HeadlessChannel) is int headlessChannelId && Get(links.Headless) is int headlessId)
-        {
-            return new(ContentItemLocation.Headless, headlessChannelId, headlessId, language);
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Column ordinals of the link columns (see <c>ContentInventorySql.LinkColumns</c>). -1 when a list has no such column.
-    /// </summary>
-    private sealed record LinkOrdinals(
-        int Item,
-        int Language,
-        int Workspace,
-        int WebsiteChannel,
-        int WebPage,
-        int EmailChannel,
-        int Email,
-        int HeadlessChannel,
-        int Headless)
-    {
-        public static LinkOrdinals From(DbDataReader reader, bool withChannels) =>
-            new(
-                reader.GetOrdinal("ContentItemID"),
-                reader.GetOrdinal("ContentLanguageName"),
-                reader.GetOrdinal("WorkspaceID"),
-                withChannels ? reader.GetOrdinal("WebsiteChannelID") : -1,
-                withChannels ? reader.GetOrdinal("WebPageItemID") : -1,
-                withChannels ? reader.GetOrdinal("EmailChannelID") : -1,
-                withChannels ? reader.GetOrdinal("EmailConfigurationID") : -1,
-                withChannels ? reader.GetOrdinal("HeadlessChannelID") : -1,
-                withChannels ? reader.GetOrdinal("HeadlessItemID") : -1);
     }
 }

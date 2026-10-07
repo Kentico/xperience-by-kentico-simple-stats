@@ -19,6 +19,18 @@ public sealed record StatsSnapshotFilter
     public int? ChannelId { get; init; }
 
     /// <summary>
+    /// Optional number of days a report looks ahead or back from now (for example the publishing calendar).
+    /// Only reports with a window read it (see <see cref="NormalizeWindow"/>); it is not part of <see cref="StatsSnapshotQuery"/>.
+    /// </summary>
+    public int? Window { get; init; }
+
+    /// <summary>
+    /// Returns <see cref="Window"/> when it is one of <paramref name="windows"/>, else <paramref name="defaultWindow"/>.
+    /// </summary>
+    public int NormalizeWindow(IReadOnlyCollection<int> windows, int defaultWindow) =>
+        Window is int window && windows.Contains(window) ? window : defaultWindow;
+
+    /// <summary>
     /// Applies defaults and returns a query that is safe to run.
     /// </summary>
     /// <param name="kinds">Kinds the report supports. <see cref="Kind"/> is matched case-insensitively and returned in this casing.</param>

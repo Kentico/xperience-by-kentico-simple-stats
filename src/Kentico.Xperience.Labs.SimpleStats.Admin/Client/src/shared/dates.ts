@@ -24,3 +24,28 @@ export function rangeLength(from: string, to: string): number {
   const ms = parseDateOnly(to).getTime() - parseDateOnly(from).getTime();
   return Math.round(ms / 86_400_000) + 1;
 }
+
+/**
+ * Parses a server date and time without a time zone (`yyyy-MM-ddTHH:mm[:ss...]`, server local time, as sent for
+ * `DateTime` values) as the same wall-clock time, so it is shown in server time like the server dates.
+ * Returns `null` for other values.
+ */
+export function parseServerDateTime(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value);
+  if (!match) {
+    return null;
+  }
+  const [, year, month, day, hour, minute] = match.map(Number);
+  return new Date(year, month - 1, day, hour, minute);
+}
+
+/** Server date and time as `yyyy-MM-dd HH:mm` (for CSV), or the value as sent when it cannot be parsed. */
+export function formatServerDateTimeCsv(value: string): string {
+  const date = parseServerDateTime(value);
+  if (!date) {
+    return value;
+  }
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  return `${formatDateOnly(date)} ${hh}:${mm}`;
+}

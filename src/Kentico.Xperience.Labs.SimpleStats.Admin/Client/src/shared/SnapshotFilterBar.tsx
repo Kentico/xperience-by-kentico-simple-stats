@@ -14,9 +14,18 @@ export interface SnapshotKindOptions {
   readonly items: readonly NameToggleButton[];
 }
 
+export interface SnapshotWindowOptions {
+  /** Label above the toggle, for example "Next". */
+  readonly label: string;
+  /** Windows in days, for example 7, 30 and 90. Shown as "7 days". */
+  readonly days: readonly number[];
+}
+
 export interface SnapshotFilterBarProps {
   readonly filter: StatsSnapshotFilter;
   readonly onChange: (filter: StatsSnapshotFilter) => void;
+  /** Window toggle (days ahead or back, `filter.window`). Omit to hide it. */
+  readonly windows?: SnapshotWindowOptions;
   /** Kind toggle (for example content kinds). Omit to hide it. */
   readonly kinds?: SnapshotKindOptions;
   /** Channel options. Hide the channel filter by passing none. */
@@ -30,12 +39,13 @@ export interface SnapshotFilterBarProps {
 }
 
 /**
- * Filters of a current-state (snapshot) report: optional kind toggle, channel, refresh.
+ * Filters of a current-state (snapshot) report: optional window toggle, kind toggle, channel, refresh.
  * Same layout as `StatsFilterBar`, without date range or grouping.
  */
 export const SnapshotFilterBar = ({
   filter,
   onChange,
+  windows,
   kinds,
   channels = [],
   onRefresh,
@@ -43,6 +53,15 @@ export const SnapshotFilterBar = ({
   updatedAt,
 }: SnapshotFilterBarProps) => (
   <div className="SimpleStats-filterBar">
+    {windows && (
+      <OptionToggle
+        label={windows.label}
+        items={windows.days.map((days) => ({ id: String(days), label: `${days} days` }))}
+        value={filter.window ? String(filter.window) : null}
+        onChange={(id) => onChange({ ...filter, window: id ? Number(id) : null })}
+      />
+    )}
+
     {kinds && (
       <OptionToggle
         label={kinds.label}
