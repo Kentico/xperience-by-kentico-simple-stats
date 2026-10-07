@@ -156,7 +156,7 @@ public class OrdersRevenueServiceTests
         {
             Daily = [new(new(2026, 8, 20), 1, 10m), new(new(2026, 9, 2), 2, 30m)],
             ItemsSold = (4m, 1m),
-            ByStatus = [new(1, "Fulfilled", 2, 30m)],
+            ByStatus = [new(1, "Fulfilled", "Fulfilled", 2, 30m)],
             Products = [new("sku:A", "A", "AeroPress", 25.9m, 1m, 12.5m)],
             ProductCount = 1,
             ProductRevenue = 25.9m,

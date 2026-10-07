@@ -77,10 +77,10 @@ export const ComboChart = React.memo(function ComboChart({
   useLayoutEffect(() => {
     const root = createChartRoot(chartId);
 
-    const tokens = getChartTokens();
-    const palette = getSeriesPalette();
+    const tokens = getChartTokens(root.dom);
+    const palette = getSeriesPalette(root.dom);
     const colorOf = (series: StatsSeries, index: number) => {
-      const fixed = series.color ? resolveToken(series.color) : undefined;
+      const fixed = series.color ? resolveToken(series.color, root.dom) : undefined;
       return fixed ? am5.color(fixed) : palette[index];
     };
     const columnColor = columns ? colorOf(columns, 0) : undefined;

@@ -67,7 +67,7 @@ public enum PublishingAction
 /// <param name="Label">Variant display name (for sends, the email's display name).</param>
 /// <param name="ContentType">Content type display name.</param>
 /// <param name="Language">Language display name.</param>
-/// <param name="Channel">Channel display name; for reusable items "Content hub - " plus the workspace display name (see <see cref="PublishingCalendarReportBuilder.ContentHubLabel"/>); <c>null</c> when unknown.</param>
+/// <param name="Channel">Channel display name; for reusable items "Content hub - " plus the workspace display name (see <see cref="StatsContentChannels.ContentHubLabel"/>); <c>null</c> when unknown.</param>
 /// <param name="ModifiedBy">Name of the user who last modified the variant, or <c>null</c>.</param>
 public sealed record PublishingCalendarItem(
     string Key,

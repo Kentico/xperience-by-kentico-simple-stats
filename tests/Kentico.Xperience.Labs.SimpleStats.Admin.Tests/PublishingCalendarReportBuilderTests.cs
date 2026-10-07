@@ -317,7 +317,7 @@ public class PublishingCalendarReportBuilderTests
         {
             // Only reusable items get the Content hub; a page without a channel or a send stays empty.
             Assert.That(result.Upcoming.Select(i => i.Channel), Is.EqualTo(new[] { "Content hub - Marketing", "Content hub", "Site", null, null }));
-            Assert.That(result.Recent.Single().Channel, Is.EqualTo(PublishingCalendarReportBuilder.ContentHubLabel));
+            Assert.That(result.Recent.Single().Channel, Is.EqualTo(StatsContentChannels.ContentHubLabel));
         });
     }
 }

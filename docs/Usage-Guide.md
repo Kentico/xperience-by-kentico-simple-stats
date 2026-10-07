@@ -17,7 +17,7 @@ Reports are grouped into sections. Opening the application or a section opens it
 | -------- | ------------------------------------------------------------------------------------------ |
 | Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents |
 | Emails   | Email summary, Recipient lists                                                             |
-| Content  | Content inventory, Publishing calendar                                                     |
+| Content  | Content inventory, Publishing calendar, Content locks                                      |
 | Commerce | Orders and revenue, Customers                                                              |
 | System   | Event log                                                                                  |
 
@@ -39,6 +39,7 @@ Sections have no permission of their own. A section is hidden when the role has 
 | Form submissions     | `SimpleStats.FormSubmissions`    |
 | Content inventory    | `SimpleStats.ContentInventory`   |
 | Publishing calendar  | `SimpleStats.PublishingCalendar` |
+| Content locks        | `SimpleStats.ContentLocks`       |
 | Event log            | `SimpleStats.EventLog`           |
 | Orders and revenue   | `SimpleStats.OrdersRevenue`      |
 | Customers            | `SimpleStats.Customers`          |
@@ -240,6 +241,24 @@ Shows what goes live, comes down or is sent soon, and what was published recentl
 
 Publishes and unpublishes count per language variant; sends count per email. Times are server time. Editing a scheduled item cancels its schedule, so it leaves the report. Items in all workspaces are counted; page folders are not.
 
+### Content locks
+
+Shows who holds which [content locks](https://docs.kentico.com/documentation/business-users/content-locking), and for how long, so a stuck lock can be resolved before it blocks publishing. Current state (no date range).
+
+- **Definitions**
+  - **Locked item** - a language variant locked for editing (pages, reusable items and headless items; one lock per variant). An item edited in two languages holds two locks.
+  - **Lock age** - time since the lock was taken, in whole days.
+  - **Old lock** - a lock held for more than 3 days.
+- **Content locking off** - when content locking is disabled (**Settings → Content**; see [Content locking configuration](https://docs.kentico.com/documentation/developers-and-admins/configuration/content-locking-configuration)), the report says so. Locks that still exist are listed anyway.
+- **KPIs** - locked items, users holding locks, old locks and the age of the oldest lock.
+- **Filters** - content (all, pages, reusable, emails or headless) and channel, as in "Content inventory".
+- **Tiles**
+  - "Locked items" - table of locked variants, oldest lock first (item, content type, language, channel, locked by, locked since, last modified, days locked), or a bar chart of days locked (bars over 3 days are highlighted). Reusable items show **Content hub - _workspace display name_** in the **Channel** column. Click an item to open it where it is edited. Lists show up to 50 rows; the KPIs count all.
+  - "Locks by user" - users with the most locks, with the age of their oldest lock. Locks of users that no longer exist are one **Unknown user** row. Click a user to open it in the **Users** application.
+- Each tile has its own CSV export.
+
+Locks are released when the holder uses **Release lock** (saves their changes), and automatically on publish, schedule, revert, a move to another workflow step, an email send, a move to the recycle bin, or when the holder's account is disabled. Administrators and roles with the **Override content lock** permission can **Unlock** an item, which discards the holder's unsaved changes, so ask the holder to release the lock first. After a lock is released, select **Refresh** to update the report.
+
 ### Orders and revenue
 
 Shows [digital commerce](https://docs.kentico.com/documentation/business-users/manage-commerce-stores) orders and revenue over time, orders by status, and the products with the most revenue.
@@ -250,7 +269,7 @@ Shows [digital commerce](https://docs.kentico.com/documentation/business-users/m
 - **Filters** - date range, grouping and **Order status** (all statuses, or one of the project's order statuses from **Commerce configuration**, in their order). No channel; orders have no channel. The status filter applies to the KPIs, "Orders and revenue over time" and "Top products".
 - **Tiles**
   - "Orders and revenue over time" - orders as columns (left axis) and revenue as a line (right axis), or a table.
-  - "Orders by status" - donut chart or table (orders, revenue, share) of the current status of orders created in the range. Always shows every status, also with the status filter set.
+  - "Orders by status" - donut chart or table (orders, revenue, share) of the current status of orders created in the range. Always shows every status, also with the status filter set. Slice colors are guessed from the status code and display names: failed, canceled or refunded red, pending or on hold yellow, fulfilled, completed or paid green, others neutral. Only the names count, so a status named differently gets a neutral color; several statuses of one color get lighter shades of it.
   - "Top products" - the 10 products with the most revenue (sum of order item totals), grouped by SKU (by item name when an item has no SKU), with quantity, previous period revenue and change ("New" when there was none).
 - **Open orders** - opens the native **Orders** application.
 - Each tile has its own CSV export. CSV values are raw numbers (dot decimal separator, no grouping, no currency); amount columns are marked "(raw amount)".
@@ -298,7 +317,7 @@ The event log keeps at most the number of events in **Settings → System → Ev
 
 ### Dates and caching
 
-Time-based reports use the server date. Results of all reports are cached for 5 minutes, so new activities, contacts, submissions, content changes, events, orders, customers, members, consent agreements and recipient list subscriptions can take a few minutes to appear. Select **Refresh** to load the latest numbers.
+Time-based reports use the server date. Results of all reports are cached for 5 minutes, so new activities, contacts, submissions, content changes, content locks, events, orders, customers, members, consent agreements and recipient list subscriptions can take a few minutes to appear. Select **Refresh** to load the latest numbers.
 
 ## Audit CSV exports
 
@@ -365,6 +384,7 @@ A handler exception is logged and does not fail the export. Handlers run one aft
 | Recipient lists      | `recipient-lists-events`, `recipient-lists-subscribers`, `recipient-lists`, `recipient-lists-status`                                                                                                         |
 | Content inventory    | `content-inventory-types`, `content-inventory-status`, `content-inventory-age`, `content-inventory-oldest`, `content-inventory-workflow`, `content-inventory-unused-reusable`, `content-inventory-languages` |
 | Publishing calendar  | `publishing-calendar-upcoming`, `publishing-calendar-recent`                                                                                                                                                 |
+| Content locks        | `content-locks-items`, `content-locks-users`                                                                                                                                                                 |
 | Orders and revenue   | `orders-revenue`, `orders-by-status`, `orders-top-products`                                                                                                                                                  |
 | Customers            | `customers-growth`, `customers-active`, `customers-by-country`, `customers-top-states`, `customers-top-by-revenue`, `customers-top-by-orders`, `customers-top-by-items`                                      |
 | Event log            | `event-log`, `event-log-sources`, `event-log-sources-xperience`, `event-log-sources-custom`, `event-log-codes`, `event-log-users`                                                                            |

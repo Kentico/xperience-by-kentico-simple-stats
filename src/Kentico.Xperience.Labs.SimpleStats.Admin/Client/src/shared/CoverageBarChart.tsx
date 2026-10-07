@@ -74,9 +74,9 @@ export const CoverageBarChart = React.memo(function CoverageBarChart({ items, ca
     const root = createChartRoot(chartId);
     root.numberFormatter.set('numberFormat', '#,###');
 
-    const tokens = getChartTokens();
-    const coveredColor = getSeriesPalette()[0];
-    const missingColor = resolveToken(Colors.BackgroundDisabled);
+    const tokens = getChartTokens(root.dom);
+    const coveredColor = getSeriesPalette(root.dom)[0];
+    const missingColor = resolveToken(Colors.BackgroundDisabled, root.dom);
 
     const chart = root.container.children.push(
       am5xy.XYChart.new(root, {

@@ -3,7 +3,6 @@ using System.Globalization;
 using CMS.Core;
 using CMS.Helpers;
 
-using Kentico.Xperience.Admin.Base;
 using Kentico.Xperience.Admin.Base.UIPages;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
 
@@ -92,12 +91,6 @@ internal sealed class EventLogReportService(
             ? size
             : null;
 
-    /// <summary>
-    /// Path of the "General" tab of the user in the Users application.
-    /// </summary>
-    private string? GetUserPath(int userId) =>
-        adminLinks.GetPath<UserEdit>(new PageParameterValues
-        {
-            { typeof(UserEditSection), userId },
-        });
+    /// <inheritdoc cref="StatsUserPaths.GetPath"/>
+    private string? GetUserPath(int userId) => StatsUserPaths.GetPath(adminLinks, userId);
 }

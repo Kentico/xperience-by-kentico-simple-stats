@@ -32,11 +32,6 @@ internal static class PublishingCalendarReportBuilder
     /// </summary>
     public const int ListLimit = 50;
 
-    /// <summary>
-    /// Channel column text of reusable items, which have no channel and are edited in the Content hub:
-    /// "Content hub - " plus the workspace display name, or only this text when the item has no workspace.
-    /// </summary>
-    public const string ContentHubLabel = "Content hub";
 
     // Series keys of the events per day, also used by the client.
     public const string PublishKey = "publish";
@@ -160,29 +155,13 @@ internal static class PublishingCalendarReportBuilder
                 row.DisplayName,
                 row.ContentType,
                 row.Language,
-                GetChannel(row),
+                StatsContentChannels.GetLabel(row.Channel, row.IsReusable, row.Workspace),
                 string.IsNullOrWhiteSpace(row.ModifiedBy) ? null : row.ModifiedBy)
             {
                 AdminPath = itemPath(row.Link),
             })
             .ToList();
 
-    /// <summary>
-    /// The channel, or for reusable items the Content hub with the workspace (see <see cref="ContentHubLabel"/>).
-    /// </summary>
-    private static string? GetChannel(PublishingRow row)
-    {
-        if (!string.IsNullOrWhiteSpace(row.Channel))
-        {
-            return row.Channel;
-        }
-        if (!row.IsReusable)
-        {
-            return null;
-        }
-
-        return string.IsNullOrWhiteSpace(row.Workspace) ? ContentHubLabel : $"{ContentHubLabel} - {row.Workspace}";
-    }
 
     private static string GetKey(PublishingRow row)
     {

@@ -13,6 +13,7 @@ public class StatsNavigationTests
         StatsPermissions.FORM_SUBMISSIONS,
         StatsPermissions.CONTENT_INVENTORY,
         StatsPermissions.PUBLISHING_CALENDAR,
+        StatsPermissions.CONTENT_LOCKS,
         StatsPermissions.EVENT_LOG,
         StatsPermissions.ORDERS_REVENUE,
         StatsPermissions.CUSTOMERS,
@@ -38,7 +39,7 @@ public class StatsNavigationTests
 
     [TestCase(typeof(StatsContactsSection), new[] { "activity-counts", "top-pages", "new-contacts", "form-submissions", "members", "consents" })]
     [TestCase(typeof(StatsEmailsSection), new[] { "email-summary", "recipient-lists" })]
-    [TestCase(typeof(StatsContentSection), new[] { "content-inventory", "publishing-calendar" })]
+    [TestCase(typeof(StatsContentSection), new[] { "content-inventory", "publishing-calendar", "content-locks" })]
     [TestCase(typeof(StatsCommerceSection), new[] { "orders-revenue", "customers" })]
     [TestCase(typeof(StatsSystemSection), new[] { "event-log" })]
     public void Section_HasReportsInOrder(Type sectionType, string[] slugs) =>
@@ -185,16 +186,33 @@ public class StatsNavigationTests
         Assert.Multiple(() =>
         {
             Assert.That(deniedSections, Is.EquivalentTo(new[] { "contacts", "emails", "commerce", "system" }));
-            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory" }));
+            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory", "content-locks" }));
             Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsApplicationPage)), deniedSections)?.Path, Is.EqualTo("content"));
             Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsContentSection)), deniedReports)?.Path, Is.EqualTo("publishing-calendar"));
         });
     }
 
     [Test]
-    public async Task BothContentReports_OpensContentInventoryFirst()
+    public async Task OnlyContentLocks_ShowsOnlyContentSection_AndOpensContentLocks()
     {
-        var isGranted = Granted(StatsPermissions.CONTENT_INVENTORY, StatsPermissions.PUBLISHING_CALENDAR);
+        var isGranted = Granted(StatsPermissions.CONTENT_LOCKS);
+
+        var deniedSections = await StatsNavigation.GetDeniedChildSlugs(typeof(StatsApplicationPage), isGranted);
+        var deniedReports = await StatsNavigation.GetDeniedChildSlugs(typeof(StatsContentSection), isGranted);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(deniedSections, Is.EquivalentTo(new[] { "contacts", "emails", "commerce", "system" }));
+            Assert.That(deniedReports, Is.EquivalentTo(new[] { "content-inventory", "publishing-calendar" }));
+            Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsApplicationPage)), deniedSections)?.Path, Is.EqualTo("content"));
+            Assert.That(StatsNavigation.GetDefaultRoute(ChildRoutes(typeof(StatsContentSection)), deniedReports)?.Path, Is.EqualTo("content-locks"));
+        });
+    }
+
+    [Test]
+    public async Task AllContentReports_OpensContentInventoryFirst()
+    {
+        var isGranted = Granted(StatsPermissions.CONTENT_INVENTORY, StatsPermissions.PUBLISHING_CALENDAR, StatsPermissions.CONTENT_LOCKS);
 
         var deniedReports = await StatsNavigation.GetDeniedChildSlugs(typeof(StatsContentSection), isGranted);
 
@@ -210,7 +228,7 @@ public class StatsNavigationTests
     {
         var denied = await StatsNavigation.GetDeniedChildSlugs(
             typeof(StatsApplicationPage),
-            Granted([.. allPermissions.Where(p => p is not StatsPermissions.CONTENT_INVENTORY and not StatsPermissions.PUBLISHING_CALENDAR)]));
+            Granted([.. allPermissions.Where(p => p is not StatsPermissions.CONTENT_INVENTORY and not StatsPermissions.PUBLISHING_CALENDAR and not StatsPermissions.CONTENT_LOCKS)]));
 
         Assert.That(denied, Is.EquivalentTo(new[] { "content" }));
     }

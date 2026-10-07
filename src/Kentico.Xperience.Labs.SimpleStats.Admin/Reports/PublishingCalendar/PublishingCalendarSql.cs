@@ -76,12 +76,11 @@ internal static class PublishingCalendarSql
         """;
 
     // Name of the user who last modified the variant (U).
-    private const string ModifiedByColumn = """
-        COALESCE(NULLIF(LTRIM(RTRIM(CONCAT(U.[FirstName], N' ', U.[LastName]))), N''), U.[UserName]) AS [ModifiedBy]
-        """;
+    private const string ModifiedByColumn = StatsContentSql.UserDisplayName + " AS [ModifiedBy]";
 
     // Columns and joins of the content lists besides the event or publish time. The workspace (WS) names the Content hub of reusable items.
-    private const string ListColumns = """
+    // {0} = link columns, {1} = modified by column.
+    private const string ListColumns = $$"""
         M.[ContentItemLanguageMetadataID] AS [RowID],
                 I.[ContentItemID],
                 {0}
@@ -89,17 +88,15 @@ internal static class PublishingCalendarSql
                 M.[ContentItemLanguageMetadataDisplayName] AS [DisplayName],
                 C.[ClassDisplayName],
                 L.[ContentLanguageDisplayName],
-                CH.[ChannelDisplayName],
-                I.[ContentItemIsReusable] AS [IsReusable],
-                WS.[WorkspaceDisplayName],
+                {{StatsContentSql.ChannelLabelColumns}}
                 {1}
         """;
 
-    private const string ListJoins = """
+    // {0} = link joins.
+    private const string ListJoins = $$"""
         INNER JOIN [CMS_ContentLanguage] L ON L.[ContentLanguageID] = M.[ContentItemLanguageMetadataContentLanguageID]
-                LEFT JOIN [CMS_Channel] CH ON CH.[ChannelID] = I.[ContentItemChannelID]
+                {{StatsContentSql.ChannelLabelJoins}}
                 LEFT JOIN [CMS_User] U ON U.[UserID] = M.[ContentItemLanguageMetadataModifiedByUserID]
-                LEFT JOIN [CMS_Workspace] WS ON WS.[WorkspaceID] = I.[ContentItemWorkspaceID]
                 {0}
         """;
 

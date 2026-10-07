@@ -58,6 +58,39 @@ internal static class StatsContentKinds
 }
 
 /// <summary>
+/// Channel column text of content lists (read with <see cref="StatsContentSql.ChannelLabelColumns"/>).
+/// </summary>
+internal static class StatsContentChannels
+{
+    /// <summary>
+    /// Channel column text of reusable items, which have no channel and are edited in the Content hub:
+    /// "Content hub - " plus the workspace display name, or only this text when the item has no workspace.
+    /// </summary>
+    public const string ContentHubLabel = "Content hub";
+
+    /// <summary>
+    /// Returns the channel, or for reusable items the Content hub with the workspace (see <see cref="ContentHubLabel"/>).
+    /// <c>null</c> for other items without a channel.
+    /// </summary>
+    /// <param name="channel">Channel display name, or <c>null</c>.</param>
+    /// <param name="isReusable">Whether the item is a reusable item.</param>
+    /// <param name="workspace">Display name of the item's workspace, or <c>null</c>.</param>
+    public static string? GetLabel(string? channel, bool isReusable, string? workspace)
+    {
+        if (!string.IsNullOrWhiteSpace(channel))
+        {
+            return channel;
+        }
+        if (!isReusable)
+        {
+            return null;
+        }
+
+        return string.IsNullOrWhiteSpace(workspace) ? ContentHubLabel : $"{ContentHubLabel} - {workspace}";
+    }
+}
+
+/// <summary>
 /// What is needed to link a content item in the admin.
 /// </summary>
 /// <param name="Location">Application the item is edited in.</param>

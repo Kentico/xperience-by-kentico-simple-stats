@@ -15,35 +15,41 @@ export function getXbkTheme(root: am5.Root): am5.Theme {
 }
 
 /**
- * Resolves a `Colors` token (`var(--name)`) to its current value.
+ * Resolves a `Colors` token (`var(--name)`) to its current value on `element`.
  * amCharts draws on canvas, so it cannot use CSS custom properties directly.
+ * The admin defines the tokens on its theme wrapper (light or dark theme class), not on `<html>`,
+ * so pass an element inside the admin, for example the chart's `root.dom`.
  */
-export function resolveToken(token: Colors): string | undefined {
+export function resolveToken(token: Colors, element: Element): string | undefined {
   const name = /var\((--[^)]+)\)/.exec(token)?.[1];
   if (!name) {
     return undefined;
   }
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim();
+  const value = getComputedStyle(element).getPropertyValue(name).trim();
   return value.startsWith('#') || value.startsWith('rgb') ? value : undefined;
 }
 
-/** Solid admin color tokens used as the series palette, in order. */
+/**
+ * Solid admin color tokens used as the series palette, in order: the product color, then the tag colors.
+ * No status colors (alert, warning, success, info): series and slices are plain categories (for example
+ * project-defined order statuses), and red or green would suggest a meaning they do not have.
+ * Charts that need a meaning set a fixed color per series (for example event log types) or use `highlightFrom`.
+ * Neon green and rose are left out (they read as success and alert).
+ */
 const paletteTokens: Colors[] = [
   Colors.Product,
-  Colors.InfoBackgroundHighEmphasis,
-  Colors.SuccessBackgroundHighEmphasis,
-  Colors.WarningBackgroundHighEmphasis,
-  Colors.AlertBackgroundHighEmphasis,
-  Colors.ProductSelectedHover,
-  Colors.WarningIcon,
-  Colors.TextLowEmphasis,
+  Colors.BackgroundTagSkyBlue,
+  Colors.BackgroundTagYellow,
+  Colors.BackgroundTagKontentTurquoise,
+  Colors.BackgroundTagUltramarineBlue,
+  Colors.BackgroundTagWarmGrey,
+  Colors.BackgroundTagMajorelleBlue,
+  Colors.BackgroundTagKenticoOrange,
 ];
 
-export function getSeriesPalette(): am5.Color[] {
+export function getSeriesPalette(element: Element): am5.Color[] {
   return paletteTokens
-    .map(resolveToken)
+    .map((token) => resolveToken(token, element))
     .filter((value): value is string => value !== undefined)
     .map((value) => am5.color(value));
 }
@@ -58,9 +64,9 @@ export interface ChartTokens {
   readonly surface: am5.Color;
 }
 
-export function getChartTokens(): ChartTokens {
+export function getChartTokens(element: Element): ChartTokens {
   const read = (token: Colors, fallback: string) =>
-    am5.color(resolveToken(token) ?? fallback);
+    am5.color(resolveToken(token, element) ?? fallback);
 
   // Fallbacks match tokens.css values in case a token is missing at runtime.
   return {

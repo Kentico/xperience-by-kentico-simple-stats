@@ -146,6 +146,24 @@ public class StatsRankedBuilderTests
     }
 
     [Test]
+    public void RankedItem_Tone_LeftOutWhenNull_SerializedAsName()
+    {
+        var item = new StatsRankedItem(1, "a", "A", null, 1, null, 1, null);
+
+        Assert.That(System.Text.Json.JsonSerializer.Serialize(item), Does.Not.Contain("Tone"));
+        Assert.That(System.Text.Json.JsonSerializer.Serialize(item with { Tone = StatsTone.Problem }), Does.Contain("\"Tone\":\"Problem\""));
+        Assert.That(System.Text.Json.JsonSerializer.Serialize(StatsTone.Done), Is.EqualTo("\"Done\""));
+    }
+
+    [Test]
+    public void Build_PassesToneThrough()
+    {
+        var result = StatsRankedBuilder.Build(query, [Entry("a", 1) with { Tone = StatsTone.Caution }, Entry("b", 2)], total: 3, itemCount: 2, limit: 25);
+
+        Assert.That(result.Items.Select(i => i.Tone), Is.EqualTo(new StatsTone?[] { null, StatsTone.Caution }));
+    }
+
+    [Test]
     public void BuildSnapshot_HasNoRange_AndSortsByValue()
     {
         var result = StatsRankedBuilder.BuildSnapshot(2, [Entry("a", 1), Entry("b", 3)], total: 4, itemCount: 2, limit: 25);

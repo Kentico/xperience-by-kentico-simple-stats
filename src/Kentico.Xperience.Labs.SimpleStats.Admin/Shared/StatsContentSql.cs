@@ -3,8 +3,8 @@ using System.Data.Common;
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
 
 /// <summary>
-/// SQL fragments shared by the content reports (content inventory, publishing calendar): the filtered items and language
-/// variants, and the columns that link an item to where it is edited. Only constant fragments; all values are parameters.
+/// SQL fragments shared by the content reports (content inventory, publishing calendar, content locks): the filtered items and language
+/// variants, the columns that link an item to where it is edited, its channel label and user names. Only constant fragments; all values are parameters.
 /// </summary>
 /// <remarks>
 /// Items are <c>CMS_ContentItem</c> rows whose class is a content type (<c>ClassType</c> = <see cref="ClassTypeParameter"/>).
@@ -75,6 +75,33 @@ internal static class StatsContentSql
                     WHERE H1.[HeadlessItemContentItemID] = I.[ContentItemID]
                     ORDER BY H1.[HeadlessItemID]
                 ) H
+        """;
+
+    /// <summary>
+    /// What the channel column of a list needs (see <see cref="StatsContentChannels.GetLabel"/>): the item's channel display name
+    /// (<c>[ChannelDisplayName]</c>), whether it is reusable (<c>[IsReusable]</c>) and its workspace display name (<c>[WorkspaceDisplayName]</c>).
+    /// Ends with a comma. Needs <see cref="ChannelLabelJoins"/>.
+    /// </summary>
+    public const string ChannelLabelColumns = """
+        CH.[ChannelDisplayName],
+                I.[ContentItemIsReusable] AS [IsReusable],
+                WS.[WorkspaceDisplayName],
+        """;
+
+    /// <summary>
+    /// Joins of <see cref="ChannelLabelColumns"/>: the item's channel (<c>CH</c>) and workspace (<c>WS</c>).
+    /// </summary>
+    public const string ChannelLabelJoins = """
+        LEFT JOIN [CMS_Channel] CH ON CH.[ChannelID] = I.[ContentItemChannelID]
+                LEFT JOIN [CMS_Workspace] WS ON WS.[WorkspaceID] = I.[ContentItemWorkspaceID]
+        """;
+
+    /// <summary>
+    /// Display name of an administration user (<c>CMS_User</c>, alias <c>U</c>): first and last name, or the user name when both are empty.
+    /// <c>NULL</c> when there is no such user. An expression without an alias.
+    /// </summary>
+    public const string UserDisplayName = """
+        COALESCE(NULLIF(LTRIM(RTRIM(CONCAT(U.[FirstName], N' ', U.[LastName]))), N''), U.[UserName])
         """;
 
     /// <summary>

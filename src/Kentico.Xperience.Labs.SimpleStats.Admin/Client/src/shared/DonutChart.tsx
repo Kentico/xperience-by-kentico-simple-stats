@@ -1,13 +1,16 @@
 import * as am5 from '@amcharts/amcharts5';
 import * as am5percent from '@amcharts/amcharts5/percent';
+import type { Colors } from '@kentico/xperience-admin-components';
 import React, { useId, useLayoutEffect, useMemo } from 'react';
 
-import { createChartRoot, getChartTokens, getSeriesPalette } from './chartTheme';
+import { createChartRoot, getChartTokens, getSeriesPalette, resolveToken } from './chartTheme';
 import { StatsShareSlice } from './types';
 import { useStableValue } from './useStableValue';
 
 export interface DonutChartProps {
-  /** Slices in display order. Colors follow the series palette in this order. */
+  /**
+   * Slices in display order. Slices with a fixed `color` use it; the others take the series palette colors in this order.
+   */
   readonly slices: readonly StatsShareSlice[];
   /** Big text in the center, for example a share or a total. */
   readonly centerValue?: string;
@@ -17,10 +20,42 @@ export interface DonutChartProps {
   readonly ariaLabel: string;
 }
 
+/**
+ * Lightening (share of the way to white) of the 1st, 2nd, 3rd, ... slice with the same fixed color,
+ * so for example two "done" statuses are still told apart. Later slices keep the last step.
+ */
+const sameColorLightening = [0, 0.3, 0.5, 0.65, 0.75];
+
 interface ChartRow {
   readonly category: string;
   readonly value: number;
-  readonly fill?: am5.Color;
+  /** Fixed color token, resolved in the effect. */
+  readonly color?: Colors;
+}
+
+/**
+ * Slice fills: the fixed color of a slice (lighter for each earlier slice with the same color),
+ * else the next palette color. `undefined` lets amCharts pick (no palette).
+ */
+function getFills(
+  rows: readonly ChartRow[],
+  palette: readonly am5.Color[],
+  element: Element,
+): (am5.Color | undefined)[] {
+  const sameColorCount = new Map<Colors, number>();
+  let paletteIndex = 0;
+
+  return rows.map((row) => {
+    const fixed = row.color ? resolveToken(row.color, element) : undefined;
+    if (row.color && fixed) {
+      const count = sameColorCount.get(row.color) ?? 0;
+      sameColorCount.set(row.color, count + 1);
+      const step = sameColorLightening[Math.min(count, sameColorLightening.length - 1)];
+      return am5.Color.lighten(am5.color(fixed), step);
+    }
+    // No fixed color, or its token is missing at runtime: next palette color.
+    return palette.length > 0 ? palette[paletteIndex++ % palette.length] : undefined;
+  });
 }
 
 /** amCharts reads `[...]` as text formatting; double the brackets so data shows as typed. */
@@ -31,7 +66,8 @@ function escapeChartText(text: string): string {
 /**
  * Donut chart (amCharts 5 percent pie with an inner radius): one slice per item,
  * center label, legend with shares, tooltip with value and share.
- * Slice colors follow the series palette in order, so they match `StackedColumnChart` series colors.
+ * Slice colors follow the series palette in order, so they match `StackedColumnChart` series colors,
+ * except slices with a fixed `color` (see `StatsShareSlice.color`).
  * The root is created in `useLayoutEffect` and disposed on unmount or data change.
  */
 export const DonutChart = React.memo(function DonutChart({
@@ -42,14 +78,15 @@ export const DonutChart = React.memo(function DonutChart({
 }: DonutChartProps) {
   const chartId = `stats-chart-${useId().replace(/:/g, '')}`;
 
-  const rows = useMemo<ChartRow[]>(() => {
-    const palette = getSeriesPalette();
-    return slices.map((slice, index) => ({
-      category: escapeChartText(slice.name),
-      value: slice.value,
-      ...(palette.length > 0 ? { fill: palette[index % palette.length] } : {}),
-    }));
-  }, [slices]);
+  const rows = useMemo<ChartRow[]>(
+    () =>
+      slices.map((slice) => ({
+        category: escapeChartText(slice.name),
+        value: slice.value,
+        color: slice.color,
+      })),
+    [slices],
+  );
   // Rebuild the chart only when the rows change by content, not on every new prop identity.
   const data = useStableValue(rows);
 
@@ -57,7 +94,9 @@ export const DonutChart = React.memo(function DonutChart({
     const root = createChartRoot(chartId);
     root.numberFormatter.set('numberFormat', '#,##0');
 
-    const tokens = getChartTokens();
+    const tokens = getChartTokens(root.dom);
+    // Colors are read from the chart element (the admin theme wrapper defines the tokens).
+    const fills = getFills(data, getSeriesPalette(root.dom), root.dom);
 
     const chart = root.container.children.push(
       am5percent.PieChart.new(root, {
@@ -96,7 +135,9 @@ export const DonutChart = React.memo(function DonutChart({
       // Slices do not pull out on click; the chart is read-only.
       toggleKey: 'none',
     });
-    series.data.setAll(data);
+    series.data.setAll(
+      data.map((row, index) => ({ category: row.category, value: row.value, fill: fills[index] })),
+    );
 
     if (centerValue) {
       series.children.push(

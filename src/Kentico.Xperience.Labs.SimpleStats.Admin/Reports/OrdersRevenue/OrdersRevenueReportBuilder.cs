@@ -87,7 +87,10 @@ internal static class OrdersRevenueReportBuilder
             SecondaryLabel: null,
             Value: row.Orders,
             SecondaryValue: StatsValues.Round(row.Revenue, StatsValueKind.Amount),
-            Url: null));
+            Url: null)
+        {
+            Tone = OrderStatusTones.Get(row.CodeName, row.DisplayName),
+        });
 
         // Status order (not by value), so colors and rows stay in the order of the project's statuses.
         var result = StatsRankedBuilder.Build(range, entries, total: 0, itemCount: 0, limit: int.MaxValue, keepOrder: true);

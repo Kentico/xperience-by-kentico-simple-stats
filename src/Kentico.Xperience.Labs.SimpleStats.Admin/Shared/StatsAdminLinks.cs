@@ -1,4 +1,5 @@
 using Kentico.Xperience.Admin.Base;
+using Kentico.Xperience.Admin.Base.UIPages;
 
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
 
@@ -15,6 +16,21 @@ internal interface IStatsAdminLinks
     /// (for example when an admin application is not installed).
     /// </summary>
     public string? GetPath<TPage>(PageParameterValues? parameters = null);
+}
+
+/// <summary>
+/// Admin paths of administration users.
+/// </summary>
+internal static class StatsUserPaths
+{
+    /// <summary>
+    /// Path of the "General" tab of the user in the Users application, or <c>null</c>.
+    /// </summary>
+    public static string? GetPath(IStatsAdminLinks adminLinks, int userId) =>
+        adminLinks.GetPath<UserEdit>(new PageParameterValues
+        {
+            { typeof(UserEditSection), userId },
+        });
 }
 
 internal sealed class StatsAdminLinks(IPageLinkGenerator pageLinkGenerator) : IStatsAdminLinks

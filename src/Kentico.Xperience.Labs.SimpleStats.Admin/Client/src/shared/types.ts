@@ -84,7 +84,12 @@ export interface StatsRankedItem {
   readonly tertiaryValue?: number | null;
   /** `tertiaryValue` formatted like `valueText`. */
   readonly tertiaryValueText?: string;
+  /** Meaning of the item for chart colors (for example an order status). Missing for lists without it. */
+  readonly tone?: StatsTone;
 }
+
+/** Mirrors `StatsTone`: meaning of an item for chart colors (traffic light). */
+export type StatsTone = 'Neutral' | 'Problem' | 'Caution' | 'Done';
 
 /** Mirrors `StatsRankedResult`: ranked list for one range and channel. */
 export interface StatsRankedResult {
@@ -182,6 +187,11 @@ export interface StatsShareSlice {
   readonly secondaryValue?: number | null;
   /** `secondaryValue` formatted by the project's price formatter. Missing: format the number. */
   readonly secondaryValueText?: string | null;
+  /**
+   * Fixed slice color (for example a status color). Missing: the next palette color.
+   * Later slices with the same color get lighter variants of it, so they stay apart.
+   */
+  readonly color?: Colors;
 }
 
 /** Mirrors `StatsCoverageItem`: "x of y" row, for example items with a language variant. */
@@ -226,6 +236,10 @@ export interface StatsAgedItem {
   readonly days: number;
   /** Native admin page, relative to the admin root (see `adminLinks.ts`). */
   readonly adminPath?: string | null;
+  /** Optional channel text (for example "Content hub - Marketing" for reusable items, set by the server). Left out when not used. */
+  readonly channel?: string | null;
+  /** Optional date of the last change (`yyyy-MM-dd`, server date) when the age counts from something else (for example a lock). */
+  readonly lastModified?: string | null;
 }
 
 /**
