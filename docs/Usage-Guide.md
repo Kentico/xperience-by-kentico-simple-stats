@@ -17,7 +17,7 @@ Reports are grouped into sections. Opening the application or a section opens it
 | -------- | ------------------------------------------------------------------------------------------ |
 | Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents |
 | Emails   | Email summary, Recipient lists                                                             |
-| Content  | Content inventory, Publishing calendar, Content locks                                      |
+| Content  | Content inventory, Publishing calendar, Content locks, Page freshness                      |
 | Commerce | Orders and revenue, Customers                                                              |
 | System   | Event log                                                                                  |
 
@@ -40,6 +40,7 @@ Sections have no permission of their own. A section is hidden when the role has 
 | Content inventory    | `SimpleStats.ContentInventory`   |
 | Publishing calendar  | `SimpleStats.PublishingCalendar` |
 | Content locks        | `SimpleStats.ContentLocks`       |
+| Page freshness       | `SimpleStats.PageFreshness`      |
 | Event log            | `SimpleStats.EventLog`           |
 | Orders and revenue   | `SimpleStats.OrdersRevenue`      |
 | Customers            | `SimpleStats.Customers`          |
@@ -259,6 +260,26 @@ Shows who holds which [content locks](https://docs.kentico.com/documentation/bus
 
 Locks are released when the holder uses **Release lock** (saves their changes), and automatically on publish, schedule, revert, a move to another workflow step, an email send, a move to the recycle bin, or when the holder's account is disabled. Administrators and roles with the **Override content lock** permission can **Unlock** an item, which discards the holder's unsaved changes, so ask the holder to release the lock first. After a lock is released, select **Refresh** to update the report.
 
+### Page freshness
+
+Shows which published pages people still read but nobody has updated for a long time, and which published pages nobody visits. Combines the current state of pages (last change, publish) with their page visits in a date range.
+
+- **Definitions**
+  - **Published page** - a page language variant with a published version, whose content type has a URL. Page folders and pages without a URL (for example navigation items) are left out. A page in two languages counts twice.
+  - **Last change** - the last change of the variant's latest version, as in "Content inventory" (a newer draft counts as a change).
+  - **Stale** - not changed in 12 months (the same threshold as "Content inventory").
+  - **Visits** - page visit activities of the variant in the range, matched by page and language (as the page's **Stats** tab). **Visitors** - distinct contacts.
+  - **No visits** - published, first published before the range start (new pages get a fair chance), and no visit in the range. When the first publish date is not stored (for example imported data), the last publish date is used; when neither is stored, the page counts as published before the range.
+- **KPIs** - published pages, stale pages (share of published pages), share of the range's visits that went to stale pages, and pages with no visits.
+- **Filters** - date range and website channel. No grouping.
+- **Tiles**
+  - "Stale but popular" - stale pages visited in the range, most visits first: bar chart of visits, or a table (page, language, channel, tree path, last modified, visits, visitors). Click a page to open it.
+  - "Visits by page age" - published pages per time since their last change (under 3 months, 3–6, 6–12, over 12 months) as columns, with their visits as a line, or a table.
+  - "Published pages with no visits" - table (page, language, channel, tree path, first published, last modified), first published longest ago first. Click a page to open it.
+- Lists show up to 25 rows; the KPIs count all. The **Tree path** column is the page's position in the content tree (the same in all languages), not its live URL. Each tile has its own CSV export.
+
+Visits need activity tracking and the visitor's cookie consent, so a page with no visits may only be missing tracking. Contact and activity cleanup deletes old visits.
+
 ### Orders and revenue
 
 Shows [digital commerce](https://docs.kentico.com/documentation/business-users/manage-commerce-stores) orders and revenue over time, orders by status, and the products with the most revenue.
@@ -317,7 +338,7 @@ The event log keeps at most the number of events in **Settings → System → Ev
 
 ### Dates and caching
 
-Time-based reports use the server date. Results of all reports are cached for 5 minutes, so new activities, contacts, submissions, content changes, content locks, events, orders, customers, members, consent agreements and recipient list subscriptions can take a few minutes to appear. Select **Refresh** to load the latest numbers.
+Time-based reports use the server date. Results of all reports are cached for 5 minutes, so new activities, contacts, submissions, content changes, content locks, page visits, events, orders, customers, members, consent agreements and recipient list subscriptions can take a few minutes to appear. Select **Refresh** to load the latest numbers.
 
 ## Audit CSV exports
 
@@ -385,6 +406,7 @@ A handler exception is logged and does not fail the export. Handlers run one aft
 | Content inventory    | `content-inventory-types`, `content-inventory-status`, `content-inventory-age`, `content-inventory-oldest`, `content-inventory-workflow`, `content-inventory-unused-reusable`, `content-inventory-languages` |
 | Publishing calendar  | `publishing-calendar-upcoming`, `publishing-calendar-recent`                                                                                                                                                 |
 | Content locks        | `content-locks-items`, `content-locks-users`                                                                                                                                                                 |
+| Page freshness       | `page-freshness-stale-popular`, `page-freshness-age`, `page-freshness-no-visits`                                                                                                                             |
 | Orders and revenue   | `orders-revenue`, `orders-by-status`, `orders-top-products`                                                                                                                                                  |
 | Customers            | `customers-growth`, `customers-active`, `customers-by-country`, `customers-top-states`, `customers-top-by-revenue`, `customers-top-by-orders`, `customers-top-by-items`                                      |
 | Event log            | `event-log`, `event-log-sources`, `event-log-sources-xperience`, `event-log-sources-custom`, `event-log-codes`, `event-log-users`                                                                            |

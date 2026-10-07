@@ -1,3 +1,5 @@
+using CMS.DataEngine;
+
 using Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
 
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
@@ -99,13 +101,10 @@ internal static class ContentInventorySql
             W.[ContentWorkflowDisplayName];
         """;
 
-    // 4. Language variants per age of the last change (one row).
+    // 4. Language variants per age of the last change (one row). {7} = age columns.
     private const string AgeQuery = """
         SELECT
-            ISNULL(SUM(CASE WHEN M.[ContentItemLanguageMetadataModifiedWhen] >= @Age3 THEN 1 ELSE 0 END), 0) AS [Under3Months],
-            ISNULL(SUM(CASE WHEN M.[ContentItemLanguageMetadataModifiedWhen] < @Age3 AND M.[ContentItemLanguageMetadataModifiedWhen] >= @Age6 THEN 1 ELSE 0 END), 0) AS [Months3To6],
-            ISNULL(SUM(CASE WHEN M.[ContentItemLanguageMetadataModifiedWhen] < @Age6 AND M.[ContentItemLanguageMetadataModifiedWhen] >= @Age12 THEN 1 ELSE 0 END), 0) AS [Months6To12],
-            ISNULL(SUM(CASE WHEN M.[ContentItemLanguageMetadataModifiedWhen] < @Age12 THEN 1 ELSE 0 END), 0) AS [Over12Months]
+            {7}
         {2}
         {3};
         """;
@@ -200,6 +199,38 @@ internal static class ContentInventorySql
         """;
 
     /// <summary>
+    /// Returns the age bucket parameters (<see cref="Age3Parameter"/>, <see cref="Age6Parameter"/>, <see cref="Age12Parameter"/>):
+    /// 3, 6 and <see cref="ContentInventoryReportBuilder.StaleMonths"/> months before <paramref name="now"/> (server time).
+    /// </summary>
+    public static IEnumerable<DataParameter> GetAgeParameters(DateTime now) =>
+    [
+        new DataParameter(Age3Parameter, now.AddMonths(-3)),
+        new DataParameter(Age6Parameter, now.AddMonths(-6)),
+        new DataParameter(Age12Parameter, GetStaleBefore(now)),
+    ];
+
+    /// <summary>
+    /// Variants last changed before this time are stale (not changed in <see cref="ContentInventoryReportBuilder.StaleMonths"/> months).
+    /// </summary>
+    public static DateTime GetStaleBefore(DateTime now) => now.AddMonths(-ContentInventoryReportBuilder.StaleMonths);
+
+    /// <summary>
+    /// Select columns (no trailing comma) that sum <paramref name="value"/> per age bucket of <paramref name="modifiedColumn"/>
+    /// (needs the <see cref="GetAgeParameters"/> parameters): <c>[Under3Months]</c>, <c>[Months3To6]</c>, <c>[Months6To12]</c> and
+    /// <c>[Over12Months]</c>, each followed by <paramref name="suffix"/>. Read with <see cref="ContentAgeRow"/>. Constant arguments only.
+    /// </summary>
+    /// <param name="modifiedColumn">Column with the last change, for example <c>M.[ContentItemLanguageMetadataModifiedWhen]</c>.</param>
+    /// <param name="value">Summed per row: <c>1</c> counts rows, a column sums it (for example visits).</param>
+    /// <param name="suffix">Suffix of the column names, for example <c>Visits</c>.</param>
+    public static string AgeColumns(string modifiedColumn, string value = "1", string suffix = "") =>
+        $"""
+        ISNULL(SUM(CASE WHEN {modifiedColumn} >= @Age3 THEN {value} ELSE 0 END), 0) AS [Under3Months{suffix}],
+                    ISNULL(SUM(CASE WHEN {modifiedColumn} < @Age3 AND {modifiedColumn} >= @Age6 THEN {value} ELSE 0 END), 0) AS [Months3To6{suffix}],
+                    ISNULL(SUM(CASE WHEN {modifiedColumn} < @Age6 AND {modifiedColumn} >= @Age12 THEN {value} ELSE 0 END), 0) AS [Months6To12{suffix}],
+                    ISNULL(SUM(CASE WHEN {modifiedColumn} < @Age12 THEN {value} ELSE 0 END), 0) AS [Over12Months{suffix}]
+        """;
+
+    /// <summary>
     /// Returns the batch. Add <see cref="KindParameter"/> when <paramref name="hasKind"/> and
     /// <see cref="ChannelParameter"/> when <paramref name="hasChannel"/>; all other parameters are always used.
     /// </summary>
@@ -218,6 +249,7 @@ internal static class ContentInventorySql
             UnusedWhere,
             StatsContentSql.LinkColumns,
             StatsContentSql.LinkApply,
+            AgeColumns("M.[ContentItemLanguageMetadataModifiedWhen]"),
         ];
 
         return string.Join(

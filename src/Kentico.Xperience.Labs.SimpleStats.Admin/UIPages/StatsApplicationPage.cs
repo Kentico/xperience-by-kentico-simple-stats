@@ -28,6 +28,7 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 [UIPermission(StatsPermissions.CONTENT_INVENTORY, StatsPermissions.CONTENT_INVENTORY_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.PUBLISHING_CALENDAR, StatsPermissions.PUBLISHING_CALENDAR_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.CONTENT_LOCKS, StatsPermissions.CONTENT_LOCKS_DISPLAY_NAME)]
+[UIPermission(StatsPermissions.PAGE_FRESHNESS, StatsPermissions.PAGE_FRESHNESS_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.EVENT_LOG, StatsPermissions.EVENT_LOG_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.ORDERS_REVENUE, StatsPermissions.ORDERS_REVENUE_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.CUSTOMERS, StatsPermissions.CUSTOMERS_DISPLAY_NAME)]

@@ -1,3 +1,5 @@
+using System.Data.Common;
+
 using Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
 
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
@@ -125,6 +127,16 @@ internal sealed record ContentStatusRow(
 internal sealed record ContentAgeRow(int Under3Months, int Months3To6, int Months6To12, int Over12Months)
 {
     public static ContentAgeRow Empty { get; } = new(0, 0, 0, 0);
+
+    /// <summary>
+    /// Reads the current row's <see cref="ContentInventorySql.AgeColumns"/> with the same <paramref name="suffix"/>.
+    /// </summary>
+    public static ContentAgeRow Read(DbDataReader reader, string suffix = "") =>
+        new(
+            reader.GetInt32(reader.GetOrdinal("Under3Months" + suffix)),
+            reader.GetInt32(reader.GetOrdinal("Months3To6" + suffix)),
+            reader.GetInt32(reader.GetOrdinal("Months6To12" + suffix)),
+            reader.GetInt32(reader.GetOrdinal("Over12Months" + suffix)));
 }
 
 /// <summary>

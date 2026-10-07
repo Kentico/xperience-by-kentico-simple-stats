@@ -28,6 +28,12 @@ internal static class ContentInventoryReportBuilder
     /// </summary>
     public const int ListLimit = 25;
 
+    /// <summary>
+    /// Months without a change after which a language variant is stale (the "Over 12 months" age bucket).
+    /// See <see cref="ContentInventorySql.GetStaleBefore"/>.
+    /// </summary>
+    public const int StaleMonths = 12;
+
     // Status keys, also used by the client.
     public const string PublishedKey = "published";
     public const string DraftKey = "draft";
@@ -188,12 +194,7 @@ internal static class ContentInventoryReportBuilder
 
         var buckets = StatsRankedBuilder.BuildSnapshot(
             query.ChannelId,
-            [
-                new StatsRankedEntry(Under3MonthsKey, "Under 3 months", null, age.Under3Months, null, null),
-                new StatsRankedEntry(Months3To6Key, "3–6 months", null, age.Months3To6, null, null),
-                new StatsRankedEntry(Months6To12Key, "6–12 months", null, age.Months6To12, null, null),
-                new StatsRankedEntry(Over12MonthsKey, "Over 12 months", null, age.Over12Months, null, null),
-            ],
+            GetAgeEntries(age),
             total,
             0,
             limit: int.MaxValue,
@@ -206,6 +207,19 @@ internal static class ContentInventoryReportBuilder
 
         return new(buckets, Math.Max(age.Over12Months, 0), oldest);
     }
+
+    /// <summary>
+    /// Age buckets in a fixed order (under 3 months, 3–6, 6–12, over <see cref="StaleMonths"/> months), 0 included.
+    /// </summary>
+    /// <param name="counts">Value of each bucket (for example language variants).</param>
+    /// <param name="secondary">Optional secondary value of each bucket (for example page visits).</param>
+    public static IReadOnlyList<StatsRankedEntry> GetAgeEntries(ContentAgeRow counts, ContentAgeRow? secondary = null) =>
+    [
+        new(Under3MonthsKey, "Under 3 months", null, counts.Under3Months, secondary?.Under3Months, null),
+        new(Months3To6Key, "3–6 months", null, counts.Months3To6, secondary?.Months3To6, null),
+        new(Months6To12Key, "6–12 months", null, counts.Months6To12, secondary?.Months6To12, null),
+        new(Over12MonthsKey, "Over 12 months", null, counts.Over12Months, secondary?.Over12Months, null),
+    ];
 
     private static ContentWorkflowSummary BuildWorkflow(
         ContentInventoryData data,

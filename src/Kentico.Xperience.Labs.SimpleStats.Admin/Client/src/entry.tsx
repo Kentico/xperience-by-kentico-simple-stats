@@ -10,6 +10,7 @@ import { FormSubmissionsTemplate as FormSubmissions } from './form-submissions/F
 import { MembersTemplate as Members } from './members/MembersTemplate';
 import { NewContactsTemplate as NewContacts } from './new-contacts/NewContactsTemplate';
 import { OrdersRevenueTemplate as OrdersRevenue } from './orders-revenue/OrdersRevenueTemplate';
+import { PageFreshnessTemplate as PageFreshness } from './page-freshness/PageFreshnessTemplate';
 import { PublishingCalendarTemplate as PublishingCalendar } from './publishing-calendar/PublishingCalendarTemplate';
 import { RecipientListsTemplate as RecipientLists } from './recipient-lists/RecipientListsTemplate';
 import { withExportPermission } from './shared/exportPermission';
@@ -24,6 +25,7 @@ export const FormSubmissionsTemplate = withExportPermission(FormSubmissions);
 export const ContentInventoryTemplate = withExportPermission(ContentInventory);
 export const PublishingCalendarTemplate = withExportPermission(PublishingCalendar);
 export const ContentLocksTemplate = withExportPermission(ContentLocks);
+export const PageFreshnessTemplate = withExportPermission(PageFreshness);
 export const EventLogTemplate = withExportPermission(EventLog);
 export const OrdersRevenueTemplate = withExportPermission(OrdersRevenue);
 export const CustomersTemplate = withExportPermission(Customers);

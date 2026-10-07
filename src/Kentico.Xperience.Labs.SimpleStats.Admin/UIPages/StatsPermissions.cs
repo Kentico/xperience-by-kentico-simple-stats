@@ -29,6 +29,9 @@ public static class StatsPermissions
     public const string CONTENT_LOCKS = PREFIX + "ContentLocks";
     public const string CONTENT_LOCKS_DISPLAY_NAME = "Content locks";
 
+    public const string PAGE_FRESHNESS = PREFIX + "PageFreshness";
+    public const string PAGE_FRESHNESS_DISPLAY_NAME = "Page freshness";
+
     public const string EVENT_LOG = PREFIX + "EventLog";
     public const string EVENT_LOG_DISPLAY_NAME = "Event log";
 

@@ -28,14 +28,15 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
         var parameters = new QueryDataParameters
         {
             new DataParameter(ContentInventorySql.ClassTypeParameter, ClassType.CONTENT_TYPE),
-            new DataParameter(ContentInventorySql.Age3Parameter, now.AddMonths(-3)),
-            new DataParameter(ContentInventorySql.Age6Parameter, now.AddMonths(-6)),
-            new DataParameter(ContentInventorySql.Age12Parameter, now.AddMonths(-12)),
             new DataParameter(ContentInventorySql.OverdueBeforeParameter, now.AddDays(-ContentInventoryReportBuilder.OverdueDays)),
             new DataParameter(ContentInventorySql.LimitParameter, ContentInventoryReportBuilder.ListLimit),
             new DataParameter(ContentInventorySql.IncludeUnusedParameter, ContentInventoryReportBuilder.IncludesReusable(query)),
             new DataParameter(ContentInventorySql.ReusableKindParameter, ClassContentTypeType.REUSABLE),
         };
+        foreach (var parameter in ContentInventorySql.GetAgeParameters(now))
+        {
+            parameters.Add(parameter);
+        }
         if (query.Kind is string kind)
         {
             parameters.Add(new DataParameter(ContentInventorySql.KindParameter, kind));
@@ -164,11 +165,7 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
             return ContentAgeRow.Empty;
         }
 
-        return new(
-            reader.GetInt32(reader.GetOrdinal("Under3Months")),
-            reader.GetInt32(reader.GetOrdinal("Months3To6")),
-            reader.GetInt32(reader.GetOrdinal("Months6To12")),
-            reader.GetInt32(reader.GetOrdinal("Over12Months")));
+        return ContentAgeRow.Read(reader);
     }
 
     /// <summary>
