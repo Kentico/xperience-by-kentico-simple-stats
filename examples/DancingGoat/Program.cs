@@ -71,6 +71,7 @@ builder.Services.AddLocalization()
 
 builder.Services.AddDancingGoatServices();
 builder.Services.AddSingleton<IEmailActivityTrackingEvaluator, EmailActivityTrackingEvaluator>();
+builder.Services.AddUtmTracking();
 
 ConfigureEmailBuilder(builder.Services);
 ConfigureMembershipServices(builder.Services);

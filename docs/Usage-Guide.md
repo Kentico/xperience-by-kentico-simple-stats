@@ -523,3 +523,17 @@ Contact and activity cleanup (configured in **Settings**) deletes old data. A dr
 ## Sample data
 
 In the `examples/DancingGoat` project, use the **Sample data generator** application to create contacts and activities.
+
+## UTM capture (optional)
+
+Activities have `ActivityUTMSource` and `ActivityUTMContent` columns, but Xperience does not fill them. The `examples/DancingGoat` project stores the `utm_source` and `utm_content` query parameters on landing page activities, so you can report on campaign sources. `utm_medium` and `utm_campaign` have no column and are not stored.
+
+The code is in `examples/DancingGoat/Samples/UtmTracking` and can be copied into your project:
+
+- `UtmWebPagesActivityLogger.cs` - decorates `IWebPagesActivityLogger`. Reads the UTM values from the landing page URL into the request-scoped `UtmParameters` service, then calls Xperience's logger.
+- `UtmParameters.cs` - the request-scoped service holding the two values.
+- `UtmActivityModifier.cs` - an `IActivityModifier` that sets the two columns on landing page activities only (max 200 characters).
+- `UtmTrackingModule.cs` - a module that registers the modifier.
+- `UtmTrackingExtensions.cs` - call `builder.Services.AddUtmTracking()` in `Program.cs` after `AddKentico()`.
+
+A landing page activity is logged for the first page of a browsing session. Xperience then sets a cookie that marks the session as landed, renewed for 20 minutes on each page view, so a visit after 20 minutes without page views counts as a new landing page and captures the UTM values of its URL. Only the landing page activity gets the values, not later page visits.
