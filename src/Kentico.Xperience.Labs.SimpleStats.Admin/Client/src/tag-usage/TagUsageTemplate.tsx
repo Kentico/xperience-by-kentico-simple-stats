@@ -218,7 +218,7 @@ export const TagUsageTemplate = (props: TagUsageTemplateProps) => {
 
           <StatsTile
             headline="Untagged content by field"
-            description={`Language variants with and without a tag, per taxonomy field. A field of a reusable field schema is one row for all content types with the schema. Smart folders and listings that filter by tags miss untagged content. ${untaggedHint}`}
+            description={`${untaggedHint} A reusable field schema field is one row for all content types with the schema. Smart folders and listings that filter by tags miss untagged content.`}
             isLoading={isLoading}
             hasError={hasError}
             isEmpty={report.fields.length === 0}
@@ -229,6 +229,7 @@ export const TagUsageTemplate = (props: TagUsageTemplateProps) => {
                 items={report.fields}
                 captions={fieldCaptions}
                 ariaLabel="Tagged and untagged language variants per taxonomy field"
+                labelWidth={280}
               />
             )}
             renderTable={() => (

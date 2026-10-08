@@ -32,6 +32,8 @@ export interface CoverageBarChartProps {
   readonly captions: CoverageCaptions;
   /** Accessible name for the chart. */
   readonly ariaLabel: string;
+  /** Max width of the row labels in px (longer labels are truncated). Default 160. */
+  readonly labelWidth?: number;
 }
 
 interface ChartRow {
@@ -46,7 +48,7 @@ interface ChartRow {
 const rowHeight = 40;
 const chartPadding = 88;
 const minHeight = 160;
-const labelWidth = 160;
+const defaultLabelWidth = 160;
 
 /** amCharts reads `[...]` as text formatting; double the brackets so data shows as typed. */
 function escapeChartText(text: string): string {
@@ -59,7 +61,12 @@ function escapeChartText(text: string): string {
  * the missing part in the disabled background color (like an empty track).
  * The root is created in `useLayoutEffect` and disposed on unmount or data change.
  */
-export const CoverageBarChart = React.memo(function CoverageBarChart({ items, captions, ariaLabel }: CoverageBarChartProps) {
+export const CoverageBarChart = React.memo(function CoverageBarChart({
+  items,
+  captions,
+  ariaLabel,
+  labelWidth = defaultLabelWidth,
+}: CoverageBarChartProps) {
   const chartId = `stats-chart-${useId().replace(/:/g, '')}`;
 
   const rows = useMemo<ChartRow[]>(
@@ -109,7 +116,8 @@ export const CoverageBarChart = React.memo(function CoverageBarChart({ items, ca
         wheelY: 'none',
         layout: root.verticalLayout,
         paddingLeft: 0,
-        paddingRight: 0,
+        // Room for the centered "100%" label at the end of the x axis.
+        paddingRight: 24,
       }),
     );
     chart.zoomOutButton.set('forceHidden', true);
@@ -227,7 +235,7 @@ export const CoverageBarChart = React.memo(function CoverageBarChart({ items, ca
     return () => {
       root.dispose();
     };
-  }, [chartId, data, captions.covered, captions.flagged, captions.missing]);
+  }, [chartId, data, captions.covered, captions.flagged, captions.missing, labelWidth]);
 
   return (
     <div
