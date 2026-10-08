@@ -98,6 +98,8 @@ public class ContentInventoryServiceTests
             ],
             // A page in a workflow step links to the page, not the workflow.
             WorkflowItems = [new(1, "Page", "Article", "English", modified, "Review", 4, "Articles") { Link = new(ContentItemLocation.WebPage, 1, 42, "en") }],
+            PendingDrafts = [new(1, "Page", "Article", "English", modified) { Link = new(ContentItemLocation.WebPage, 1, 42, "en") }],
+            PendingDraftCount = 1,
         };
 
         var result = await service.GetReport(all, refresh: false, CancellationToken.None);
@@ -110,6 +112,7 @@ public class ContentInventoryServiceTests
             null,
         }));
         Assert.That(result.Workflow.Items.Single().AdminPath, Is.EqualTo("/webpages-1/en_42/content"));
+        Assert.That(result.ForgottenEdits.Items.Single().AdminPath, Is.EqualTo("/webpages-1/en_42/content"));
     }
 
     [Test]

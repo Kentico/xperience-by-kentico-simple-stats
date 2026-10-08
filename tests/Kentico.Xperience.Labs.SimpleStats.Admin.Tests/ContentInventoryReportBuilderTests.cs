@@ -192,6 +192,68 @@ public class ContentInventoryReportBuilderTests
     }
 
     [Test]
+    public void Build_ForgottenEdits_DraftAndLiveDates_StepAndChannel_SeveralLanguages()
+    {
+        var link = new ContentItemLink(ContentItemLocation.WebPage, 1, 42, "en");
+        var data = new ContentInventoryData(types, languages, []) with
+        {
+            Now = now,
+            PendingDrafts =
+            [
+                // Over the threshold, live since the last publish.
+                new ContentVariantRow(1, "Coffee", "Article", "English", now.AddDays(-30)) { LivePublishedWhen = new(2025, 6, 1, 8, 0, 0, DateTimeKind.Unspecified), Channel = "Site", Link = link },
+                // Same item, other language, in a workflow step.
+                new ContentVariantRow(2, "Café", "Article", "Spanish", now.AddDays(-20), "Review", 2, "Articles") { LivePublishedWhen = new(2025, 7, 1, 8, 0, 0, DateTimeKind.Unspecified), Channel = "Site" },
+                // Within the threshold: pending, not forgotten. Reusable item in the Content hub.
+                new ContentVariantRow(3, "Beans", "Coffee", "English", now.AddDays(-2)) { LivePublishedWhen = new(2025, 8, 1, 8, 0, 0, DateTimeKind.Unspecified), IsReusable = true, Workspace = "Marketing" },
+            ],
+            PendingDraftCount = 3,
+            ForgottenEditCount = 2,
+        };
+
+        var result = ContentInventoryReportBuilder.Build(all, data, _ => null, id => $"/workflows/{id}", l => $"/item/{l.ObjectId}/{l.LanguageName}");
+
+        var edits = result.ForgottenEdits;
+        Assert.That(edits.PendingDrafts, Is.EqualTo(3));
+        Assert.That(edits.Forgotten, Is.EqualTo(2));
+        Assert.That(edits.OverdueDays, Is.EqualTo(ContentInventoryReportBuilder.OverdueDays));
+        Assert.That(edits.Items.Select(i => (i.Key, i.Language, i.Channel, i.Detail, i.Since, i.Days, i.AdminPath)), Is.EqualTo(new (string, string?, string?, string?, DateOnly, int, string?)[]
+        {
+            ("1", "English", "Site", "Live since 2025-06-01", new(2026, 8, 30), 30, "/item/42/en"),
+            ("2", "Spanish", "Site", "Live since 2025-07-01 · Review (Articles)", new(2026, 9, 9), 20, "/workflows/2"),
+            ("3", "English", "Content hub - Marketing", "Live since 2025-08-01", new(2026, 9, 27), 2, null),
+        }));
+    }
+
+    [Test]
+    public void Build_ForgottenEdits_CountsCoverMoreThanListed()
+    {
+        var data = new ContentInventoryData(types, languages, []) with
+        {
+            Now = now,
+            PendingDrafts = [new ContentVariantRow(1, "Coffee", "Article", "English", now.AddDays(-30))],
+            PendingDraftCount = 40,
+            ForgottenEditCount = 31,
+        };
+
+        var edits = ContentInventoryReportBuilder.Build(all, data, _ => null, _ => null).ForgottenEdits;
+
+        Assert.That(edits.PendingDrafts, Is.EqualTo(40));
+        Assert.That(edits.Forgotten, Is.EqualTo(31));
+        Assert.That(edits.Items.Single().Detail, Is.Null);
+    }
+
+    [Test]
+    public void Build_ForgottenEdits_EmptyWhenNone()
+    {
+        var edits = ContentInventoryReportBuilder.Build(all, ContentInventoryData.Empty, _ => null, _ => null).ForgottenEdits;
+
+        Assert.That(edits.PendingDrafts, Is.Zero);
+        Assert.That(edits.Forgotten, Is.Zero);
+        Assert.That(edits.Items, Is.Empty);
+    }
+
+    [Test]
     public void Build_Unused_CountsPerTypeAndListsItems()
     {
         var data = new ContentInventoryData(types, languages, []) with

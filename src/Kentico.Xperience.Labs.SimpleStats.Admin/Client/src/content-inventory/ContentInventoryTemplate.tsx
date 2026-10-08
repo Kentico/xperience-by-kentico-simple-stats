@@ -63,6 +63,17 @@ interface ContentWorkflowSummary {
   readonly items: readonly StatsAgedItem[];
 }
 
+/** Mirrors `ContentForgottenEditsSummary`. */
+interface ContentForgottenEditsSummary {
+  /** Published variants with a newer draft. */
+  readonly pendingDrafts: number;
+  /** Of `pendingDrafts`, drafts unchanged for more than `overdueDays`. */
+  readonly forgotten: number;
+  readonly overdueDays: number;
+  /** Least recently changed draft first. `since` is the draft's last change; `detail` is "Live since" plus the step when in one. */
+  readonly items: readonly StatsAgedItem[];
+}
+
 /** Mirrors `UnusedReusableSummary`. */
 interface UnusedReusableSummary {
   readonly count: number;
@@ -88,6 +99,7 @@ interface ContentInventoryResult {
   readonly languageCoverage: readonly StatsCoverageItem[];
   readonly age: ContentAgeSummary;
   readonly workflow: ContentWorkflowSummary;
+  readonly forgottenEdits: ContentForgottenEditsSummary;
   /** `null` when the filters exclude reusable items. */
   readonly unusedReusable: UnusedReusableSummary | null;
   readonly totalVariants: number;
@@ -141,6 +153,19 @@ const oldestCaptions: AgedItemCaptions = {
 
 const workflowCaptions: AgedItemCaptions = { ...oldestCaptions, detail: 'Workflow step' };
 
+const forgottenDaysCaptions: StatsRankedCaptions = {
+  label: 'Item',
+  secondaryLabel: 'Content type',
+  value: 'Days since draft changed',
+};
+
+const forgottenCaptions: AgedItemCaptions = {
+  ...oldestCaptions,
+  channel: 'Channel',
+  detail: 'Published version',
+  since: 'Draft changed',
+};
+
 const unusedCaptions: AgedItemCaptions = {
   label: 'Item',
   category: 'Content type',
@@ -165,6 +190,9 @@ const statusHint =
 
 const workflowHint =
   'The time an item entered its step is not stored, so days count from the last change of the language variant.';
+
+const forgottenHint =
+  'Published items with a newer draft. Visitors see the published version until the draft is published. Drafts scheduled to publish are left out (see Publishing calendar). Items in workflow steps also appear in Action needed.';
 
 function toFilter(report: ContentInventoryResult): StatsSnapshotFilter {
   return { kind: report.kind, channelId: report.channelId };
@@ -230,8 +258,9 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
     [report.age.buckets.items],
   );
 
-  const { workflow, age, unusedReusable: unused } = report;
+  const { workflow, forgottenEdits, age, unusedReusable: unused } = report;
   const oldestDays = useMemo(() => toDaysRankedItems(age.oldest), [age.oldest]);
+  const forgottenDays = useMemo(() => toDaysRankedItems(forgottenEdits.items), [forgottenEdits.items]);
   const workflowDays = useMemo(
     () => toDaysRankedItems(workflow.items, (item) => item.detail),
     [workflow.items],
@@ -293,6 +322,14 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
       'content-inventory-workflow',
       `content-inventory-workflow_${fileSuffix}.csv`,
       toAgedCsv(workflow.items, workflowCaptions, getAgedHref),
+    );
+  };
+
+  const exportForgottenCsv = () => {
+    saveCsv(
+      'content-inventory-forgotten-edits',
+      `content-inventory-forgotten-edits_${fileSuffix}.csv`,
+      toAgedCsv(forgottenEdits.items, forgottenCaptions, getAgedHref),
     );
   };
 
@@ -393,6 +430,29 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
           )}
         />
       )}
+
+      <StatsTile
+        headline="Forgotten edits: unpublished changes"
+        description={`${forgottenHint} Least recently changed draft first; ${numberFormat.format(forgottenEdits.forgotten)} of ${numberFormat.format(forgottenEdits.pendingDrafts)} unchanged for more than ${forgottenEdits.overdueDays} days (highlighted). Click an item to open it. ${listedText(forgottenEdits.items.length, forgottenEdits.pendingDrafts)}`}
+        isLoading={isLoading}
+        hasError={hasError}
+        isEmpty={forgottenEdits.pendingDrafts === 0}
+        emptyMessage="No published items have unpublished changes."
+        onExportCsv={exportForgottenCsv}
+        renderChart={() => (
+          <RankedBarChart
+            items={forgottenDays}
+            captions={forgottenDaysCaptions}
+            ariaLabel="Days since the draft of published items changed"
+            getHref={getAdminHref}
+            showShare={false}
+            highlightFrom={forgottenEdits.overdueDays + 1}
+          />
+        )}
+        renderTable={() => (
+          <AgedItemTable items={forgottenEdits.items} captions={forgottenCaptions} getAdminHref={getAgedHref} />
+        )}
+      />
 
       <div className="SimpleStats-tiles">
         <StatsTile

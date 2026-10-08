@@ -24,6 +24,7 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
 /// <param name="LanguageCoverage">Items with a variant in each language vs all items. Default language first.</param>
 /// <param name="Age">Language variants by time since their last change.</param>
 /// <param name="Workflow">Language variants waiting in a workflow step.</param>
+/// <param name="ForgottenEdits">Published language variants with a newer, unpublished draft.</param>
 /// <param name="UnusedReusable">Reusable items no content item references. <c>null</c> when the filters exclude reusable items.</param>
 /// <param name="TotalVariants">Language variants of the items (one item can have one per language).</param>
 /// <param name="ScheduledPublish">Language variants with a scheduled publish.</param>
@@ -41,6 +42,7 @@ public sealed record ContentInventoryResult(
     IReadOnlyList<StatsCoverageItem> LanguageCoverage,
     ContentAgeSummary Age,
     ContentWorkflowSummary Workflow,
+    ContentForgottenEditsSummary ForgottenEdits,
     UnusedReusableSummary? UnusedReusable,
     int TotalVariants,
     int ScheduledPublish,
@@ -75,6 +77,20 @@ public sealed record ContentAgeSummary(StatsRankedResult Buckets, int NotModifie
 /// <see cref="StatsAgedItem.Detail"/> is the step; <see cref="StatsAgedItem.AdminPath"/> links to the item, or to its workflow's steps when the item cannot be linked.
 /// </param>
 public sealed record ContentWorkflowSummary(int InWorkflow, int Overdue, int OverdueDays, IReadOnlyList<StatsAgedItem> Items);
+
+/// <summary>
+/// Published language variants with a newer draft (a published version that is not the latest one). Visitors see the
+/// published version until the draft is published. Initial drafts (never published) are not included.
+/// </summary>
+/// <param name="PendingDrafts">Variants with a newer draft of their published version.</param>
+/// <param name="Forgotten">Of <paramref name="PendingDrafts"/>, variants whose draft has not changed for more than <paramref name="OverdueDays"/> days.</param>
+/// <param name="OverdueDays">Days after which a draft counts as forgotten (<see cref="ContentInventoryReportBuilder.OverdueDays"/>).</param>
+/// <param name="Items">
+/// Variants with a newer draft, least recently changed draft first (up to <see cref="ContentInventoryReportBuilder.ListLimit"/>).
+/// <see cref="StatsAgedItem.Since"/> is the last change of the draft; <see cref="StatsAgedItem.Detail"/> is "Live since" the last publish,
+/// plus the workflow step when the draft is in one.
+/// </param>
+public sealed record ContentForgottenEditsSummary(int PendingDrafts, int Forgotten, int OverdueDays, IReadOnlyList<StatsAgedItem> Items);
 
 /// <summary>
 /// Reusable items that no content item references (content item selector fields and Page Builder widget properties).
@@ -162,6 +178,18 @@ internal sealed record ContentVariantRow(
 {
     /// <inheritdoc cref="ContentItemLink"/>
     public ContentItemLink? Link { get; init; }
+
+    /// <summary>Last publish of the variant's published version (server time), or <c>null</c>. Only for variants with a newer draft.</summary>
+    public DateTime? LivePublishedWhen { get; init; }
+
+    /// <summary>Channel display name, or <c>null</c> (see <see cref="StatsContentChannels.GetLabel"/>). Only for variants with a newer draft.</summary>
+    public string? Channel { get; init; }
+
+    /// <summary>Whether the item is a reusable item. Only for variants with a newer draft.</summary>
+    public bool IsReusable { get; init; }
+
+    /// <summary>Workspace display name, or <c>null</c>. Only for variants with a newer draft.</summary>
+    public string? Workspace { get; init; }
 }
 
 /// <summary>
@@ -208,6 +236,17 @@ internal sealed record ContentInventoryData(
 
     /// <summary>Unused reusable items, least recently changed first.</summary>
     public IReadOnlyList<UnusedItemRow> UnusedItems { get; init; } = [];
+
+    /// <summary>Variants with a newer draft of their published version, least recently changed draft first.</summary>
+    public IReadOnlyList<ContentVariantRow> PendingDrafts { get; init; } = [];
+
+    /// <summary>Variants with a newer draft of their published version (all, not only <see cref="PendingDrafts"/>).</summary>
+    public int PendingDraftCount { get; init; }
+
+    /// <summary>
+    /// Variants with a newer draft unchanged for more than <see cref="ContentInventoryReportBuilder.OverdueDays"/> days (all, not only <see cref="PendingDrafts"/>).
+    /// </summary>
+    public int ForgottenEditCount { get; init; }
 }
 
 /// <summary>

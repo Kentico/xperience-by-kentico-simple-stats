@@ -35,6 +35,11 @@ internal static class ContentInventorySql
     /// <summary>Variants in a workflow step modified before this time count as waiting too long.</summary>
     public const string OverdueBeforeParameter = "@OverdueBefore";
 
+    /// <summary>
+    /// <see cref="CMS.ContentEngine.VersionStatus.Published"/>: status of a variant's published version (<c>ContentItemCommonDataVersionStatus</c>).
+    /// </summary>
+    public const string PublishedStatusParameter = "@PublishedStatus";
+
     /// <summary>Maximum number of rows of each list.</summary>
     public const string LimitParameter = "@Limit";
 
@@ -184,6 +189,46 @@ internal static class ContentInventorySql
         ORDER BY N.[ModifiedWhen], I.[ContentItemID];
         """;
 
+    // 9. Language variants with a newer draft of their published version (forgotten edits), least recently changed draft first.
+    // A published version that is not the latest one has a newer version (a draft, maybe in a workflow step). Initial drafts have no
+    // published version, so they are not listed. Drafts scheduled to publish are planned (Publishing calendar), not listed. The window counts run before TOP, so they cover all of them.
+    private const string PendingDraftsQuery = $$"""
+        SELECT TOP (@Limit)
+            M.[ContentItemLanguageMetadataID] AS [VariantID],
+            I.[ContentItemID],
+            {5}
+            L.[ContentLanguageName],
+            M.[ContentItemLanguageMetadataDisplayName] AS [DisplayName],
+            C.[ClassDisplayName],
+            L.[ContentLanguageDisplayName],
+            {{StatsContentSql.ChannelLabelColumns}}
+            M.[ContentItemLanguageMetadataModifiedWhen] AS [ModifiedWhen],
+            D.[ContentItemCommonDataLastPublishedWhen] AS [LivePublishedWhen],
+            S.[ContentWorkflowStepDisplayName] AS [StepDisplayName],
+            W.[ContentWorkflowID] AS [WorkflowID],
+            W.[ContentWorkflowDisplayName] AS [WorkflowDisplayName],
+            COUNT(*) OVER () AS [PendingCount],
+            SUM(CASE WHEN M.[ContentItemLanguageMetadataModifiedWhen] < @OverdueBefore THEN 1 ELSE 0 END) OVER () AS [OverdueCount]
+        {2}
+        INNER JOIN [CMS_ContentLanguage] L ON L.[ContentLanguageID] = M.[ContentItemLanguageMetadataContentLanguageID]
+        CROSS APPLY (
+            SELECT TOP (1) D1.[ContentItemCommonDataLastPublishedWhen]
+            FROM [CMS_ContentItemCommonData] D1
+            WHERE D1.[ContentItemCommonDataContentItemID] = M.[ContentItemLanguageMetadataContentItemID]
+                AND D1.[ContentItemCommonDataContentLanguageID] = M.[ContentItemLanguageMetadataContentLanguageID]
+                AND D1.[ContentItemCommonDataVersionStatus] = @PublishedStatus
+                AND D1.[ContentItemCommonDataIsLatest] = 0
+            ORDER BY D1.[ContentItemCommonDataID] DESC
+        ) D
+        {{StatsContentSql.ChannelLabelJoins}}
+        {6}
+        LEFT JOIN [CMS_ContentWorkflowStep] S ON S.[ContentWorkflowStepID] = M.[ContentItemLanguageMetadataContentWorkflowStepID]
+        LEFT JOIN [CMS_ContentWorkflow] W ON W.[ContentWorkflowID] = S.[ContentWorkflowStepWorkflowID]
+        {3}
+            AND M.[ContentItemLanguageMetadataScheduledPublishWhen] IS NULL
+        ORDER BY M.[ContentItemLanguageMetadataModifiedWhen], M.[ContentItemLanguageMetadataID];
+        """;
+
     /// <summary>
     /// Returns the age bucket parameters (<see cref="Age3Parameter"/>, <see cref="Age6Parameter"/>, <see cref="Age12Parameter"/>):
     /// 3, 6 and <see cref="ContentInventoryReportBuilder.StaleMonths"/> months before <paramref name="now"/> (server time).
@@ -222,7 +267,8 @@ internal static class ContentInventorySql
     /// </summary>
     /// <remarks>
     /// Result sets, in order: content types, languages, statuses, age buckets (one row), oldest variants,
-    /// variants in a workflow step, unused reusable items per content type, unused reusable items.
+    /// variants in a workflow step, unused reusable items per content type, unused reusable items,
+    /// variants with a newer draft of their published version.
     /// </remarks>
     public static string Build(bool hasKind, bool hasChannel)
     {
@@ -250,6 +296,7 @@ internal static class ContentInventorySql
                 WorkflowQuery,
                 UnusedByTypeQuery,
                 UnusedItemsQuery,
+                PendingDraftsQuery,
             }.Select(query => string.Format(null, query, args)));
     }
 }

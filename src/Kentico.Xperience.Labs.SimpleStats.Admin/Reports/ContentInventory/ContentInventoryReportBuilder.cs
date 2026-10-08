@@ -20,6 +20,7 @@ internal static class ContentInventoryReportBuilder
 
     /// <summary>
     /// Days a language variant can wait unchanged in a workflow step before it counts as waiting too long.
+    /// Also the days a newer draft of a published variant can stay unchanged before it counts as a forgotten edit.
     /// </summary>
     public const int OverdueDays = 14;
 
@@ -141,6 +142,7 @@ internal static class ContentInventoryReportBuilder
             coverage,
             BuildAge(query, data, itemPath),
             BuildWorkflow(data, inWorkflow, getWorkflowPath, itemPath),
+            BuildForgottenEdits(data, getWorkflowPath, itemPath),
             IncludesReusable(query) ? BuildUnused(data, contentTypes, getContentTypePath, itemPath) : null,
             totalVariants,
             statuses.Sum(s => s.ScheduledPublish),
@@ -237,6 +239,43 @@ internal static class ContentInventoryReportBuilder
             .ToList();
 
         return new(Math.Max(inWorkflow, items.Count), Math.Max(data.WorkflowOverdue, 0), OverdueDays, items);
+    }
+
+    private static ContentForgottenEditsSummary BuildForgottenEdits(
+        ContentInventoryData data,
+        Func<int, string?> getWorkflowPath,
+        Func<ContentItemLink?, string?> itemPath)
+    {
+        var items = data.PendingDrafts
+            .Select(v => ToAgedItem(v, data.Now) with
+            {
+                Detail = GetLiveText(v),
+                AdminPath = itemPath(v.Link) ?? (v.WorkflowId is int workflowId ? getWorkflowPath(workflowId) : null),
+                Channel = StatsContentChannels.GetLabel(v.Channel, v.IsReusable, v.Workspace),
+            })
+            .ToList();
+
+        int pending = Math.Max(data.PendingDraftCount, items.Count);
+
+        return new(pending, Math.Clamp(data.ForgottenEditCount, 0, pending), OverdueDays, items);
+    }
+
+    /// <summary>
+    /// "Live since yyyy-MM-dd" (the last publish of the published version), plus the workflow step when the draft is in one.
+    /// </summary>
+    private static string? GetLiveText(ContentVariantRow variant)
+    {
+        string? live = variant.LivePublishedWhen is DateTime published
+            ? $"Live since {DateOnly.FromDateTime(published).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}"
+            : null;
+        string? step = GetStepText(variant);
+
+        return (live, step) switch
+        {
+            (string l, string s) => $"{l} · {s}",
+            (string l, null) => l,
+            (null, var s) => s,
+        };
     }
 
     /// <summary>

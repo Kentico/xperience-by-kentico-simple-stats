@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 
+using CMS.ContentEngine;
 using CMS.DataEngine;
 
 using Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
@@ -30,6 +31,7 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
             new DataParameter(ContentInventorySql.ClassTypeParameter, ClassType.CONTENT_TYPE),
             new DataParameter(ContentInventorySql.OverdueBeforeParameter, now.AddDays(-ContentInventoryReportBuilder.OverdueDays)),
             new DataParameter(ContentInventorySql.LimitParameter, ContentInventoryReportBuilder.ListLimit),
+            new DataParameter(ContentInventorySql.PublishedStatusParameter, (int)VersionStatus.Published),
             new DataParameter(ContentInventorySql.IncludeUnusedParameter, ContentInventoryReportBuilder.IncludesReusable(query)),
             new DataParameter(ContentInventorySql.ReusableKindParameter, ClassContentTypeType.REUSABLE),
         };
@@ -58,13 +60,15 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
         await NextResult(reader, cancellationToken);
         var age = await ReadAge(reader, cancellationToken);
         await NextResult(reader, cancellationToken);
-        var (oldest, _) = await ReadVariants(reader, withWorkflow: false, cancellationToken);
+        var (oldest, _, _) = await ReadVariants(reader, VariantList.Oldest, cancellationToken);
         await NextResult(reader, cancellationToken);
-        var (workflowItems, overdue) = await ReadVariants(reader, withWorkflow: true, cancellationToken);
+        var (workflowItems, overdue, _) = await ReadVariants(reader, VariantList.Workflow, cancellationToken);
         await NextResult(reader, cancellationToken);
         var unusedByType = await ReadUnusedByType(reader, cancellationToken);
         await NextResult(reader, cancellationToken);
         var unusedItems = await ReadUnusedItems(reader, cancellationToken);
+        await NextResult(reader, cancellationToken);
+        var (pendingDrafts, forgotten, pending) = await ReadVariants(reader, VariantList.PendingDrafts, cancellationToken);
 
         return new(contentTypes, languages, statuses)
         {
@@ -75,6 +79,9 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
             WorkflowOverdue = overdue,
             UnusedByContentType = unusedByType,
             UnusedItems = unusedItems,
+            PendingDrafts = pendingDrafts,
+            PendingDraftCount = pending,
+            ForgottenEditCount = forgotten,
         };
     }
 
@@ -169,13 +176,31 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
     }
 
     /// <summary>
-    /// Reads a variant list. With <paramref name="withWorkflow"/>, also the step, workflow and overdue count columns.
+    /// Variant lists of the batch, by the columns they have.
     /// </summary>
-    private static async Task<(IReadOnlyList<ContentVariantRow> Rows, int Overdue)> ReadVariants(
+    private enum VariantList
+    {
+        /// <summary>Base columns only.</summary>
+        Oldest,
+
+        /// <summary>Also step, workflow and overdue count.</summary>
+        Workflow,
+
+        /// <summary>Also step, workflow, overdue count, pending count, channel label and last publish.</summary>
+        PendingDrafts,
+    }
+
+    /// <summary>
+    /// Reads a variant list with the columns of <paramref name="list"/>. Overdue and total are window counts (0 for lists without them).
+    /// </summary>
+    private static async Task<(IReadOnlyList<ContentVariantRow> Rows, int Overdue, int Total)> ReadVariants(
         DbDataReader reader,
-        bool withWorkflow,
+        VariantList list,
         CancellationToken cancellationToken)
     {
+        bool withWorkflow = list is VariantList.Workflow or VariantList.PendingDrafts;
+        bool withDraft = list is VariantList.PendingDrafts;
+
         int idOrdinal = reader.GetOrdinal("VariantID");
         int nameOrdinal = reader.GetOrdinal("DisplayName");
         int typeOrdinal = reader.GetOrdinal("ClassDisplayName");
@@ -185,10 +210,16 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
         int workflowOrdinal = withWorkflow ? reader.GetOrdinal("WorkflowID") : -1;
         int workflowNameOrdinal = withWorkflow ? reader.GetOrdinal("WorkflowDisplayName") : -1;
         int overdueOrdinal = withWorkflow ? reader.GetOrdinal("OverdueCount") : -1;
+        int pendingOrdinal = withDraft ? reader.GetOrdinal("PendingCount") : -1;
+        int liveOrdinal = withDraft ? reader.GetOrdinal("LivePublishedWhen") : -1;
+        int channelOrdinal = withDraft ? reader.GetOrdinal("ChannelDisplayName") : -1;
+        int reusableOrdinal = withDraft ? reader.GetOrdinal("IsReusable") : -1;
+        int workspaceOrdinal = withDraft ? reader.GetOrdinal("WorkspaceDisplayName") : -1;
         var links = StatsContentLinkReader.From(reader, withChannels: true);
 
         var rows = new List<ContentVariantRow>();
         int overdue = 0;
+        int total = 0;
         while (await reader.ReadAsync(cancellationToken))
         {
             var row = new ContentVariantRow(
@@ -214,10 +245,24 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
                 overdue = reader.GetInt32(overdueOrdinal);
             }
 
+            if (withDraft)
+            {
+                row = row with
+                {
+                    LivePublishedWhen = reader.IsDBNull(liveOrdinal) ? null : reader.GetDateTime(liveOrdinal),
+                    Channel = reader.IsDBNull(channelOrdinal) ? null : reader.GetString(channelOrdinal),
+                    IsReusable = !reader.IsDBNull(reusableOrdinal) && reader.GetBoolean(reusableOrdinal),
+                    Workspace = reader.IsDBNull(workspaceOrdinal) ? null : reader.GetString(workspaceOrdinal),
+                };
+
+                // Same value on every row.
+                total = reader.GetInt32(pendingOrdinal);
+            }
+
             rows.Add(row);
         }
 
-        return (rows, overdue);
+        return (rows, overdue, total);
     }
 
     private static async Task<IReadOnlyList<ContentTypeRow>> ReadUnusedByType(DbDataReader reader, CancellationToken cancellationToken)

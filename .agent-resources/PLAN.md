@@ -63,7 +63,7 @@ _Needs attention (current state)_
 - Publishing calendar: scheduled publish/unpublish in next 7/30 days per day; "overdue" items (scheduled time passed, not published). Source: `ContentItemLanguageMetadataScheduledPublishWhen` / `...ScheduledUnpublishWhen`. Spec: `.agent-resources/REPORT-13-PUBLISHING-CALENDAR.md` (includes ending soon).
 - Ending soon: scheduled unpublish in next N days (campaign content).
 - Locked content: locks per user, lock age, highlight old locks (helps admins decide on override). Source: `ContentItemLanguageMetadataLockedByUserID` / `LockedWhen` (content locking, 31.6). Spec: `.agent-resources/REPORT-14-CONTENT-LOCKS.md`.
-- Forgotten edits: published items with a newer draft unchanged > N days (live differs from edit); drafts and workflow items by last modifier (`ModifiedByUserID`). _Verify how `VersionStatus` separates a new draft of a published item from an initial draft._
+- Forgotten edits: published items with a newer draft unchanged > N days (live differs from edit); drafts and workflow items by last modifier (`ModifiedByUserID`). Verified 2026-10-08: published `CommonData` row with `IsLatest` = 0 = newer draft of published content. Spec (tile in Content inventory, no per-user part): `.agent-resources/REPORT-05-CONTENT-INVENTORY.md` Round 4.
 - Published content linking unpublished items: linked drafts show only in preview, so live content is missing parts. Source: `CMS_ContentItemReference` + status.
 
 _Publishing speed (date range)_
