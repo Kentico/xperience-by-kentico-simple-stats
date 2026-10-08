@@ -37,6 +37,12 @@ public sealed record StatsSnapshotFilter
     public int? LanguageId { get; init; }
 
     /// <summary>
+    /// Optional taxonomy ID (for example the tag usage report). Only reports with a taxonomy filter read it
+    /// and check it against their own options; it is not part of <see cref="StatsSnapshotQuery"/>. <c>null</c> or an unknown ID means all.
+    /// </summary>
+    public int? TaxonomyId { get; init; }
+
+    /// <summary>
     /// Returns <see cref="Window"/> when it is one of <paramref name="windows"/>, else <paramref name="defaultWindow"/>.
     /// </summary>
     public int NormalizeWindow(IReadOnlyCollection<int> windows, int defaultWindow) =>

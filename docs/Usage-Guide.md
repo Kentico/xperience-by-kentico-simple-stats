@@ -13,13 +13,13 @@ The library adds the **Simple Stats (Labs)** application to the **Digital market
 
 Reports are grouped into sections. Opening the application or a section opens its first report the role may see.
 
-| Section  | Reports                                                                                                                                                      |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents                                                                   |
-| Emails   | Email summary, Recipient lists                                                                                                                               |
-| Content  | Content inventory, Publishing calendar, Content locks, Page freshness, Reusable content usage, Publishing activity, Translation status, Editor contributions |
-| Commerce | Orders and revenue, Customers                                                                                                                                |
-| System   | Event log                                                                                                                                                    |
+| Section  | Reports                                                                                                                                                                 |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents                                                                              |
+| Emails   | Email summary, Recipient lists                                                                                                                                          |
+| Content  | Content inventory, Publishing calendar, Content locks, Page freshness, Reusable content usage, Publishing activity, Translation status, Editor contributions, Tag usage |
+| Commerce | Orders and revenue, Customers                                                                                                                                           |
+| System   | Event log                                                                                                                                                               |
 
 Sections have no permission of their own. A section is hidden when the role has no permission for any of its reports. A role with **View** but no report permission sees a **No reports available** message.
 
@@ -45,6 +45,7 @@ Sections have no permission of their own. A section is hidden when the role has 
 | Publishing activity    | `SimpleStats.PublishingActivity`  |
 | Translation status     | `SimpleStats.TranslationStatus`   |
 | Editor contributions   | `SimpleStats.EditorContributions` |
+| Tag usage              | `SimpleStats.TagUsage`            |
 | Event log              | `SimpleStats.EventLog`            |
 | Orders and revenue     | `SimpleStats.OrdersRevenue`       |
 | Customers              | `SimpleStats.Customers`           |
@@ -360,6 +361,24 @@ Shows who creates content and who last worked on it, per administration user. Th
 
 Deleted items are not counted, also not for past dates. Items in all workspaces are counted. Times are compared as stored (server time).
 
+### Tag usage
+
+Shows which tags are used, which are never used, and how much content has no tag in a taxonomy field. Smart folders and listings often filter by tags, so untagged content is hard to find.
+
+- **Definitions** (page folders are left out)
+  - **Uses** of a tag - language variants with the tag in any field. An item with the tag in two languages counts twice; one variant with the tag in two fields counts once. A parent tag counts only its own uses, not the uses of its child tags.
+  - **Unused tag** - a tag no content item has, in any language or field. The **Content** filter does not apply. A parent tag whose child tags are used is unused when it is not assigned itself.
+  - **Untagged** - per taxonomy field: language variants of the content types with the field that have no tag in it. Fields come from the content type and its reusable field schemas (a schema field is one row for all content types with the schema). **Untagged share** = untagged / variants over all fields, so a variant counts once per taxonomy field its content type has.
+- **KPIs** - taxonomies, tags (with used tags), unused tags and untagged share.
+- **Filters** - **Taxonomy** (all or one; hidden with one taxonomy) and **Content** kind (all, pages, reusable, emails, headless). No channel filter. With the taxonomy filter, fields are the ones that offer tags of that taxonomy, and only its tags count as tagged.
+- **Tiles**
+  - "Untagged content by field" - stacked bar of tagged and untagged variants per field, most untagged first, or a table (field, content types, variants, tagged, untagged, share).
+  - "Top tags" - bar chart or table of the 25 most used tags with their taxonomy. Click a tag to open it in the **Taxonomies** application.
+  - "Unused tags" - table (tag, taxonomy, parent tag) by taxonomy and title. Shows up to 100 rows. Click a tag to open it.
+- Each tile has its own CSV export.
+
+Items in all workspaces are counted. Tag titles are shown in the default language. The Content hub tag filter counts items, the report counts language variants, so numbers differ when an item has the tag in several languages.
+
 ### Orders and revenue
 
 Shows [digital commerce](https://docs.kentico.com/documentation/business-users/manage-commerce-stores) orders and revenue over time, orders by status, and the products with the most revenue.
@@ -491,6 +510,7 @@ A handler exception is logged and does not fail the export. Handlers run one aft
 | Publishing activity    | `publishing-activity-series`, `publishing-activity-types`, `publishing-activity-slowest`                                                                                                                     |
 | Translation status     | `translation-status-languages`, `translation-status-outdated`, `translation-status-types`                                                                                                                    |
 | Editor contributions   | `editor-contributions-users`, `editor-contributions-series`                                                                                                                                                  |
+| Tag usage              | `tag-usage-fields`, `tag-usage-top`, `tag-usage-unused`                                                                                                                                                      |
 | Orders and revenue     | `orders-revenue`, `orders-by-status`, `orders-top-products`                                                                                                                                                  |
 | Customers              | `customers-growth`, `customers-active`, `customers-by-country`, `customers-top-states`, `customers-top-by-revenue`, `customers-top-by-orders`, `customers-top-by-items`                                      |
 | Event log              | `event-log`, `event-log-sources`, `event-log-sources-xperience`, `event-log-sources-custom`, `event-log-codes`, `event-log-users`                                                                            |

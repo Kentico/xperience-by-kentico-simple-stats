@@ -44,6 +44,9 @@ public static class StatsPermissions
     public const string EDITOR_CONTRIBUTIONS = PREFIX + "EditorContributions";
     public const string EDITOR_CONTRIBUTIONS_DISPLAY_NAME = "Editor contributions";
 
+    public const string TAG_USAGE = PREFIX + "TagUsage";
+    public const string TAG_USAGE_DISPLAY_NAME = "Tag usage";
+
     public const string EVENT_LOG = PREFIX + "EventLog";
     public const string EVENT_LOG_DISPLAY_NAME = "Event log";
 

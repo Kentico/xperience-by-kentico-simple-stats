@@ -17,6 +17,7 @@ import { PublishingCalendarTemplate as PublishingCalendar } from './publishing-c
 import { RecipientListsTemplate as RecipientLists } from './recipient-lists/RecipientListsTemplate';
 import { ReusableUsageTemplate as ReusableUsage } from './reusable-usage/ReusableUsageTemplate';
 import { withExportPermission } from './shared/exportPermission';
+import { TagUsageTemplate as TagUsage } from './tag-usage/TagUsageTemplate';
 import { TopPagesTemplate as TopPages } from './top-pages/TopPagesTemplate';
 import { TranslationStatusTemplate as TranslationStatus } from './translation-status/TranslationStatusTemplate';
 import { WebPageStatsTemplate as WebPageStats } from './web-page-stats/WebPageStatsTemplate';
@@ -34,6 +35,7 @@ export const ReusableUsageTemplate = withExportPermission(ReusableUsage);
 export const PublishingActivityTemplate = withExportPermission(PublishingActivity);
 export const TranslationStatusTemplate = withExportPermission(TranslationStatus);
 export const EditorContributionsTemplate = withExportPermission(EditorContributions);
+export const TagUsageTemplate = withExportPermission(TagUsage);
 export const EventLogTemplate = withExportPermission(EventLog);
 export const OrdersRevenueTemplate = withExportPermission(OrdersRevenue);
 export const CustomersTemplate = withExportPermission(Customers);

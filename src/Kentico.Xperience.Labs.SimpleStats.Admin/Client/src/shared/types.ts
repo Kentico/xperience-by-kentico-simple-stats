@@ -25,6 +25,8 @@ export interface StatsSnapshotFilter {
   readonly contentTypeId?: number | null;
   /** Content language ID. Only reports with a language filter send it. */
   readonly languageId?: number | null;
+  /** Taxonomy ID. Only reports with a taxonomy filter send it. */
+  readonly taxonomyId?: number | null;
 }
 
 /**
