@@ -6,6 +6,7 @@ using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.Consents;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentLocks;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.Customers;
+using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.EditorContributions;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.EmailSummary;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.EventLog;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.FormSubmissions;
@@ -79,6 +80,8 @@ internal sealed class SimpleStatsWebAdminModule : AdminModule
         services.TryAddTransient<IPublishingActivityService, PublishingActivityService>();
         services.TryAddTransient<ITranslationStatusRepository, TranslationStatusRepository>();
         services.TryAddTransient<ITranslationStatusService, TranslationStatusService>();
+        services.TryAddTransient<IEditorContributionsRepository, EditorContributionsRepository>();
+        services.TryAddTransient<IEditorContributionsService, EditorContributionsService>();
         services.TryAddTransient<IEventLogRepository, EventLogRepository>();
         services.TryAddTransient<IEventLogReportService, EventLogReportService>();
         services.TryAddTransient<IStatsAmountFormatter, StatsAmountFormatter>();

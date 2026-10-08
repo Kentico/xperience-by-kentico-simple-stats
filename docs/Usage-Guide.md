@@ -13,13 +13,13 @@ The library adds the **Simple Stats (Labs)** application to the **Digital market
 
 Reports are grouped into sections. Opening the application or a section opens its first report the role may see.
 
-| Section  | Reports                                                                                                                                |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents                                             |
-| Emails   | Email summary, Recipient lists                                                                                                         |
-| Content  | Content inventory, Publishing calendar, Content locks, Page freshness, Reusable content usage, Publishing activity, Translation status |
-| Commerce | Orders and revenue, Customers                                                                                                          |
-| System   | Event log                                                                                                                              |
+| Section  | Reports                                                                                                                                                      |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents                                                                   |
+| Emails   | Email summary, Recipient lists                                                                                                                               |
+| Content  | Content inventory, Publishing calendar, Content locks, Page freshness, Reusable content usage, Publishing activity, Translation status, Editor contributions |
+| Commerce | Orders and revenue, Customers                                                                                                                                |
+| System   | Event log                                                                                                                                                    |
 
 Sections have no permission of their own. A section is hidden when the role has no permission for any of its reports. A role with **View** but no report permission sees a **No reports available** message.
 
@@ -31,28 +31,29 @@ Sections have no permission of their own. A section is hidden when the role has 
   - One permission per report. The role sees only the reports it has a permission for. Other reports are hidden from the navigation and return an error if opened by URL.
   - **Export** - shows the **Export CSV** buttons in all reports the role can see. Without it, the buttons are hidden.
 
-| Permission             | Code name                        |
-| ---------------------- | -------------------------------- |
-| Activity counts        | `SimpleStats.ActivityCounts`     |
-| Top pages              | `SimpleStats.TopPages`           |
-| New contacts           | `SimpleStats.NewContacts`        |
-| Form submissions       | `SimpleStats.FormSubmissions`    |
-| Content inventory      | `SimpleStats.ContentInventory`   |
-| Publishing calendar    | `SimpleStats.PublishingCalendar` |
-| Content locks          | `SimpleStats.ContentLocks`       |
-| Page freshness         | `SimpleStats.PageFreshness`      |
-| Reusable content usage | `SimpleStats.ReusableUsage`      |
-| Publishing activity    | `SimpleStats.PublishingActivity` |
-| Translation status     | `SimpleStats.TranslationStatus`  |
-| Event log              | `SimpleStats.EventLog`           |
-| Orders and revenue     | `SimpleStats.OrdersRevenue`      |
-| Customers              | `SimpleStats.Customers`          |
-| Member registrations   | `SimpleStats.Members`            |
-| Consents               | `SimpleStats.Consents`           |
-| Email summary          | `SimpleStats.EmailSummary`       |
-| Recipient lists        | `SimpleStats.RecipientLists`     |
-| Web page stats         | `SimpleStats.WebPageStats`       |
-| Export                 | `SimpleStats.Export`             |
+| Permission             | Code name                         |
+| ---------------------- | --------------------------------- |
+| Activity counts        | `SimpleStats.ActivityCounts`      |
+| Top pages              | `SimpleStats.TopPages`            |
+| New contacts           | `SimpleStats.NewContacts`         |
+| Form submissions       | `SimpleStats.FormSubmissions`     |
+| Content inventory      | `SimpleStats.ContentInventory`    |
+| Publishing calendar    | `SimpleStats.PublishingCalendar`  |
+| Content locks          | `SimpleStats.ContentLocks`        |
+| Page freshness         | `SimpleStats.PageFreshness`       |
+| Reusable content usage | `SimpleStats.ReusableUsage`       |
+| Publishing activity    | `SimpleStats.PublishingActivity`  |
+| Translation status     | `SimpleStats.TranslationStatus`   |
+| Editor contributions   | `SimpleStats.EditorContributions` |
+| Event log              | `SimpleStats.EventLog`            |
+| Orders and revenue     | `SimpleStats.OrdersRevenue`       |
+| Customers              | `SimpleStats.Customers`           |
+| Member registrations   | `SimpleStats.Members`             |
+| Consents               | `SimpleStats.Consents`            |
+| Email summary          | `SimpleStats.EmailSummary`        |
+| Recipient lists        | `SimpleStats.RecipientLists`      |
+| Web page stats         | `SimpleStats.WebPageStats`        |
+| Export                 | `SimpleStats.Export`              |
 
 The **Export** permission only hides the buttons. The CSV is built in the browser from the data the report already shows, so a role that can see a report can still copy its numbers. It is not data protection.
 
@@ -339,6 +340,26 @@ Shows which translations are missing or behind the default language, so translat
 
 AIRA translation tasks are not reported. Items in all workspaces are counted. Times are compared as stored (server time).
 
+### Editor contributions
+
+Shows who creates content and who last worked on it, per administration user. The report shows data per person, so give its permission (`SimpleStats.EditorContributions`) only to content leads and administrators.
+
+- **Definitions** (counts are per language variant; page folders are left out)
+  - **Created** - variants created by the user in the range.
+  - **Last modified** - variants whose latest change is in the range and was made by the user. Only the latest change of a variant is stored, so earlier changes, also by other users, are not counted. This undercounts users who edit content that others change later.
+  - **Published** - every publish (first publishes and later ones) by the user in the range, read from content version history (**Settings → Content → Content versioning**). Emails are not versioned. History starts when it was enabled and keeps only the last N versions per variant, so older publishes are missing. When history is disabled, published is hidden and a message says so (publishing is then not tracked per user).
+  - **Active editors** - users with any created or last modified variant in the range. Users that no longer exist are not counted.
+  - **System users** - the product's service user (`kentico-system-service`, used by imports, automation and other background work) and the public user. They are shown as their own row, marked "System user", not hidden.
+  - **Unknown user** - changes by users that no longer exist (or with no user) are one "Unknown user" row without a link.
+- **KPIs** - active editors, created, last modified and published (each compared with the previous period of the same length).
+- **Filters** - date range, grouping, **Content** kind (all, pages, reusable, emails, headless) and channel (only for pages, emails and headless items, with a channel of the matching type).
+- **Tiles**
+  - "By editor" - table (user, account, created, last modified, published, content types), most created + last modified first, or a bar chart of created + last modified. Click a user to open it in the **Users** application. Shows up to 25 users.
+  - "Created over time" - stacked columns of created variants per period for the 5 users who created the most; the others are summed as "Other users". Or a table.
+- Each tile has its own CSV export.
+
+Deleted items are not counted, also not for past dates. Items in all workspaces are counted. Times are compared as stored (server time).
+
 ### Orders and revenue
 
 Shows [digital commerce](https://docs.kentico.com/documentation/business-users/manage-commerce-stores) orders and revenue over time, orders by status, and the products with the most revenue.
@@ -469,6 +490,7 @@ A handler exception is logged and does not fail the export. Handlers run one aft
 | Reusable content usage | `reusable-usage-items`, `reusable-usage-distribution`, `reusable-usage-types`                                                                                                                                |
 | Publishing activity    | `publishing-activity-series`, `publishing-activity-types`, `publishing-activity-slowest`                                                                                                                     |
 | Translation status     | `translation-status-languages`, `translation-status-outdated`, `translation-status-types`                                                                                                                    |
+| Editor contributions   | `editor-contributions-users`, `editor-contributions-series`                                                                                                                                                  |
 | Orders and revenue     | `orders-revenue`, `orders-by-status`, `orders-top-products`                                                                                                                                                  |
 | Customers              | `customers-growth`, `customers-active`, `customers-by-country`, `customers-top-states`, `customers-top-by-revenue`, `customers-top-by-orders`, `customers-top-by-items`                                      |
 | Event log              | `event-log`, `event-log-sources`, `event-log-sources-xperience`, `event-log-sources-custom`, `event-log-codes`, `event-log-users`                                                                            |

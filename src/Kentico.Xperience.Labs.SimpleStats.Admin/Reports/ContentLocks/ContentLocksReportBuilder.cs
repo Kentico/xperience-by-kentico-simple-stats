@@ -25,7 +25,7 @@ internal static class ContentLocksReportBuilder
     public const int UserLimit = 50;
 
     /// <summary>Key of the row with the locks of users that no longer exist.</summary>
-    public const string UnknownUserKey = "(unknown)";
+    public const string UnknownUserKey = StatsUserLabels.UnknownUserKey;
 
     /// <summary>Label of the row with the locks of users that no longer exist.</summary>
     public const string UnknownUserLabel = StatsUserLabels.UnknownUserLabel;

@@ -41,6 +41,9 @@ public static class StatsPermissions
     public const string TRANSLATION_STATUS = PREFIX + "TranslationStatus";
     public const string TRANSLATION_STATUS_DISPLAY_NAME = "Translation status";
 
+    public const string EDITOR_CONTRIBUTIONS = PREFIX + "EditorContributions";
+    public const string EDITOR_CONTRIBUTIONS_DISPLAY_NAME = "Editor contributions";
+
     public const string EVENT_LOG = PREFIX + "EventLog";
     public const string EVENT_LOG_DISPLAY_NAME = "Event log";
 
