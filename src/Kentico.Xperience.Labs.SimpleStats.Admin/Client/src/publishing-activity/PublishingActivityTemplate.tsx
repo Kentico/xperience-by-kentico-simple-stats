@@ -4,7 +4,12 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { toAdminHref } from '../shared/adminLinks';
 import { AgedItemCaptions, AgedItemTable, toDaysRankedItems } from '../shared/AgedItemTable';
 import { ComparisonInfoCard } from '../shared/ComparisonInfoCard';
-import { channelsForContentKind, contentKindLabel, contentKindOptions } from '../shared/contentKinds';
+import {
+  channelsForContentKind,
+  contentKindLabel,
+  contentKindOptions,
+  fitRangeContentChannel,
+} from '../shared/contentKinds';
 import { toAgedCsv, toTimeSeriesCsv } from '../shared/csv';
 import { OptionToggle } from '../shared/filterControls';
 import { numberFormat } from '../shared/format';
@@ -113,15 +118,6 @@ function toFilter(report: PublishingActivityResult): PublishingActivityFilter {
   };
 }
 
-/** Clears the channel when it does not fit the kind (the channel filter applies only to pages, emails and headless items). */
-function fitChannel(
-  channels: readonly StatsChannelOption[],
-  filter: PublishingActivityFilter,
-): PublishingActivityFilter {
-  const fits = channelsForContentKind(channels, filter.kind).some((c) => c.id === filter.range.channelId);
-  return fits ? filter : { ...filter, range: { ...filter.range, channelId: null } };
-}
-
 export const PublishingActivityTemplate = (props: PublishingActivityTemplateProps) => {
   const saveCsv = useCsvExport();
   const { data: report, isLoading, hasError, load } = useStatsCommand<
@@ -136,7 +132,7 @@ export const PublishingActivityTemplate = (props: PublishingActivityTemplateProp
   );
 
   const handleFilterChange = (next: PublishingActivityFilter) => {
-    const normalized = fitChannel(props.channels, next);
+    const normalized = fitRangeContentChannel(props.channels, next);
     setFilter(normalized);
     void load(normalized);
   };

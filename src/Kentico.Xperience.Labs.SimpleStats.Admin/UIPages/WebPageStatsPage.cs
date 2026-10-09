@@ -81,7 +81,7 @@ internal sealed class WebPageStatsPage(
 
     public override async Task<WebPageStatsClientProperties> ConfigureTemplateProperties(WebPageStatsClientProperties properties)
     {
-        await EnsureGranted(StatsPermissions.WEB_PAGE_STATS);
+        await statsPermissionEvaluator.EnsureGranted(StatsPermissions.WEB_PAGE_STATS);
 
         if (await GetTarget() is not WebPageStatsTarget pageTarget)
         {
@@ -101,7 +101,7 @@ internal sealed class WebPageStatsPage(
     [PageCommand(CommandName = "LOAD")]
     public async Task<ICommandResponse<WebPageStatsResult>> Load(StatsLoadRequest request, CancellationToken cancellationToken)
     {
-        await EnsureGranted(StatsPermissions.WEB_PAGE_STATS);
+        await statsPermissionEvaluator.EnsureGranted(StatsPermissions.WEB_PAGE_STATS);
 
         var pageTarget = await GetTarget() ?? throw new InvalidOperationException("The web page or its language was not found.");
         var query = (request?.Filter ?? new StatsFilter()).Normalize(GetToday());
@@ -116,22 +116,12 @@ internal sealed class WebPageStatsPage(
     [PageCommand(CommandName = "LOG_EXPORT")]
     public async Task<ICommandResponse> LogExport(StatsExportLogRequest request, CancellationToken cancellationToken)
     {
-        await EnsureGranted(StatsPermissions.WEB_PAGE_STATS);
-        await EnsureGranted(StatsPermissions.EXPORT);
+        await statsPermissionEvaluator.EnsureGranted(StatsPermissions.WEB_PAGE_STATS);
+        await statsPermissionEvaluator.EnsureGranted(StatsPermissions.EXPORT);
 
         await exportEventPublisher.Publish(GetType(), request, cancellationToken);
 
         return Response();
-    }
-
-    // PageCommand.Permission and UIEvaluatePermission check the website channel application, so permissions of
-    // the "Simple Stats (Labs)" application are checked here.
-    private async Task EnsureGranted(string permission)
-    {
-        if (!await statsPermissionEvaluator.IsGranted(permission))
-        {
-            throw new ForbiddenAccessException();
-        }
     }
 
     private Task<WebPageStatsTarget?> GetTarget() => target ??= ResolveTarget();

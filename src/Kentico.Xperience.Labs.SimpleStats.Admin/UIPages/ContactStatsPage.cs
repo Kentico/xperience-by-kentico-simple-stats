@@ -62,7 +62,7 @@ internal sealed class ContactStatsPage(
 
     public override async Task<ContactStatsClientProperties> ConfigureTemplateProperties(ContactStatsClientProperties properties)
     {
-        await EnsureGranted(StatsPermissions.CONTACT_STATS);
+        await statsPermissionEvaluator.EnsureGranted(StatsPermissions.CONTACT_STATS);
 
         // UI guard only: the client builds the CSV from data already on the page.
         properties.CanExport = await statsPermissionEvaluator.IsGranted(StatsPermissions.EXPORT);
@@ -75,7 +75,7 @@ internal sealed class ContactStatsPage(
     [PageCommand(CommandName = "LOAD")]
     public async Task<ICommandResponse<ContactStatsResult>> Load(ContactStatsLoadRequest request, CancellationToken cancellationToken)
     {
-        await EnsureGranted(StatsPermissions.CONTACT_STATS);
+        await statsPermissionEvaluator.EnsureGranted(StatsPermissions.CONTACT_STATS);
 
         var report = await contactStatsService.GetReport(ContactId, request?.Filter, GetToday(), request?.Refresh ?? false, cancellationToken);
 
@@ -88,7 +88,7 @@ internal sealed class ContactStatsPage(
     [PageCommand(CommandName = "LOAD_HEATMAP")]
     public async Task<ICommandResponse<ContactHeatmapResult>> LoadHeatmap(ContactStatsLoadRequest request, CancellationToken cancellationToken)
     {
-        await EnsureGranted(StatsPermissions.CONTACT_STATS);
+        await statsPermissionEvaluator.EnsureGranted(StatsPermissions.CONTACT_STATS);
 
         var heatmap = await contactStatsService.GetHeatmap(ContactId, request?.Filter, GetToday(), request?.Refresh ?? false, cancellationToken);
 
@@ -101,22 +101,12 @@ internal sealed class ContactStatsPage(
     [PageCommand(CommandName = "LOG_EXPORT")]
     public async Task<ICommandResponse> LogExport(StatsExportLogRequest request, CancellationToken cancellationToken)
     {
-        await EnsureGranted(StatsPermissions.CONTACT_STATS);
-        await EnsureGranted(StatsPermissions.EXPORT);
+        await statsPermissionEvaluator.EnsureGranted(StatsPermissions.CONTACT_STATS);
+        await statsPermissionEvaluator.EnsureGranted(StatsPermissions.EXPORT);
 
         await exportEventPublisher.Publish(GetType(), request, cancellationToken);
 
         return Response();
-    }
-
-    // PageCommand.Permission and UIEvaluatePermission check the Contact management application, so permissions of
-    // the "Simple Stats (Labs)" application are checked here.
-    private async Task EnsureGranted(string permission)
-    {
-        if (!await statsPermissionEvaluator.IsGranted(permission))
-        {
-            throw new ForbiddenAccessException();
-        }
     }
 
     // ActivityCreated is compared as stored (server local time), so "today" uses the server time zone.

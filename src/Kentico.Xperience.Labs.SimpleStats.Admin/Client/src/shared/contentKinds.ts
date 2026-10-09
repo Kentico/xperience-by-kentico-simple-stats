@@ -1,7 +1,7 @@
 import { NameToggleButton } from '@kentico/xperience-admin-components';
 
 import { allKindsId, SnapshotKindOptions } from './SnapshotFilterBar';
-import { StatsChannelOption, StatsSnapshotFilter } from './types';
+import { StatsChannelOption, StatsFilter, StatsSnapshotFilter } from './types';
 
 /**
  * Kind (content type type) and channel filter of the content reports.
@@ -48,6 +48,14 @@ export function channelsForContentKind(
   return type ? channels.filter((channel) => channel.type === type) : [];
 }
 
+function channelFits(
+  channels: readonly StatsChannelOption[],
+  kind: string | null,
+  channelId: number | null,
+): boolean {
+  return channelsForContentKind(channels, kind).some((c) => c.id === channelId);
+}
+
 /**
  * Clears the channel when it does not fit the kind: the channel filter applies only to pages, emails and
  * headless items, with a channel of the matching type.
@@ -56,6 +64,15 @@ export function fitContentChannel<TFilter extends StatsSnapshotFilter>(
   channels: readonly StatsChannelOption[],
   filter: TFilter,
 ): TFilter {
-  const fits = channelsForContentKind(channels, filter.kind).some((c) => c.id === filter.channelId);
-  return fits ? filter : { ...filter, channelId: null };
+  return channelFits(channels, filter.kind, filter.channelId) ? filter : { ...filter, channelId: null };
+}
+
+/** `fitContentChannel` for filters that keep the channel in a date range (`range.channelId`). */
+export function fitRangeContentChannel<TFilter extends { kind: string | null; range: StatsFilter }>(
+  channels: readonly StatsChannelOption[],
+  filter: TFilter,
+): TFilter {
+  return channelFits(channels, filter.kind, filter.range.channelId)
+    ? filter
+    : { ...filter, range: { ...filter.range, channelId: null } };
 }

@@ -1,12 +1,13 @@
 using CMS.Membership.Internal;
 
+using Kentico.Xperience.Admin.Base;
 using Kentico.Xperience.Admin.Base.Authentication;
 
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 
 /// <summary>
 /// Evaluates permissions of the "Simple Stats (Labs)" application for pages outside of it (for example the web page "Stats (Labs)" tab).
-/// <see cref="Xperience.Admin.Base.IUIPermissionEvaluator"/> evaluates against the application of the current page, so it cannot be used there.
+/// <see cref="IUIPermissionEvaluator"/> evaluates against the application of the current page, so it cannot be used there.
 /// </summary>
 internal interface IStatsApplicationPermissionEvaluator
 {
@@ -14,6 +15,22 @@ internal interface IStatsApplicationPermissionEvaluator
     /// Whether the current user has <paramref name="permission"/> in the "Simple Stats (Labs)" application. Administrators always do.
     /// </summary>
     public Task<bool> IsGranted(string permission);
+}
+
+internal static class StatsApplicationPermissionEvaluatorExtensions
+{
+    // PageCommand.Permission and UIEvaluatePermission check the host application of the page (Contact management,
+    // website channel), so permissions of the "Simple Stats (Labs)" application are checked here.
+    /// <summary>
+    /// Throws <see cref="ForbiddenAccessException"/> when the current user lacks <paramref name="permission"/> in the "Simple Stats (Labs)" application.
+    /// </summary>
+    public static async Task EnsureGranted(this IStatsApplicationPermissionEvaluator evaluator, string permission)
+    {
+        if (!await evaluator.IsGranted(permission))
+        {
+            throw new ForbiddenAccessException();
+        }
+    }
 }
 
 /// <remarks>
