@@ -70,10 +70,10 @@ public class PublishingActivitySqlTests
         Assert.Multiple(() =>
         {
             Assert.That(sql, Does.Contain("V.[ContentItemVersionAction] = " + PublishingActivitySql.PublishActionParameter));
-            Assert.That(sql, Does.Contain("U.[PublishNumber] = 1"));
+            Assert.That(sql, Does.Contain("P.[ContentItemVersionAction] = " + PublishingActivitySql.PublishActionParameter));
             Assert.That(sql, Does.Contain(
-                "ABS(DATEDIFF(second, X.[FirstPublishedWhen], U.[CreatedWhen])) <= " + PublishingActivitySql.FirstPublishToleranceParameter));
-            Assert.That(sql, Does.Contain("U.[CreatedWhen] >= " + PublishingActivitySql.PreviousFromParameter));
+                "ABS(DATEDIFF(second, X.[FirstPublishedWhen], V.[ContentItemVersionCreatedWhen])) <= " + PublishingActivitySql.FirstPublishToleranceParameter));
+            Assert.That(sql, Does.Contain("V.[ContentItemVersionCreatedWhen] >= " + PublishingActivitySql.PreviousFromParameter));
         });
     }
 

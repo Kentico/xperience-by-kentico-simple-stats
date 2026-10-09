@@ -96,6 +96,7 @@ internal static class PublishingActivitySql
         """;
 
     // Publish version rows of the filtered variants from the previous period to the end of the range that are not the first publish.
+    // Only rows in the range are read (seek per variant); the earliest publish row check looks up earlier rows of that variant only.
     private const string UpdatesTable = """
         DECLARE @Updates TABLE (
             [VariantID] int NOT NULL,
@@ -103,25 +104,26 @@ internal static class PublishingActivitySql
         );
 
         INSERT INTO @Updates ([VariantID], [PublishedWhen])
-        SELECT X.[VariantID], U.[CreatedWhen]
-        FROM (
-            SELECT
-                V.[ContentItemVersionContentItemID] AS [ContentItemID],
-                V.[ContentItemVersionContentLanguageID] AS [LanguageID],
-                V.[ContentItemVersionCreatedWhen] AS [CreatedWhen],
-                ROW_NUMBER() OVER (
-                    PARTITION BY V.[ContentItemVersionContentItemID], V.[ContentItemVersionContentLanguageID]
-                    ORDER BY V.[ContentItemVersionCreatedWhen], V.[ContentItemVersionID]) AS [PublishNumber]
-            FROM [CMS_ContentItemVersion] V
-            WHERE V.[ContentItemVersionAction] = @PublishAction
-        ) U
-        INNER JOIN @Variants X ON X.[ContentItemID] = U.[ContentItemID] AND X.[LanguageID] = U.[LanguageID]
-        WHERE U.[CreatedWhen] >= @PreviousFrom
-            AND U.[CreatedWhen] < @ToExclusive
+        SELECT X.[VariantID], V.[ContentItemVersionCreatedWhen]
+        FROM @Variants X
+        INNER JOIN [CMS_ContentItemVersion] V
+            ON V.[ContentItemVersionContentItemID] = X.[ContentItemID]
+            AND V.[ContentItemVersionContentLanguageID] = X.[LanguageID]
+        WHERE V.[ContentItemVersionAction] = @PublishAction
+            AND V.[ContentItemVersionCreatedWhen] >= @PreviousFrom
+            AND V.[ContentItemVersionCreatedWhen] < @ToExclusive
             AND NOT (
-                U.[PublishNumber] = 1
-                AND X.[FirstPublishedWhen] IS NOT NULL
-                AND ABS(DATEDIFF(second, X.[FirstPublishedWhen], U.[CreatedWhen])) <= @FirstPublishTolerance);
+                X.[FirstPublishedWhen] IS NOT NULL
+                AND ABS(DATEDIFF(second, X.[FirstPublishedWhen], V.[ContentItemVersionCreatedWhen])) <= @FirstPublishTolerance
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM [CMS_ContentItemVersion] P
+                    WHERE P.[ContentItemVersionContentItemID] = V.[ContentItemVersionContentItemID]
+                        AND P.[ContentItemVersionContentLanguageID] = V.[ContentItemVersionContentLanguageID]
+                        AND P.[ContentItemVersionAction] = @PublishAction
+                        AND (P.[ContentItemVersionCreatedWhen] < V.[ContentItemVersionCreatedWhen]
+                            OR (P.[ContentItemVersionCreatedWhen] = V.[ContentItemVersionCreatedWhen]
+                                AND P.[ContentItemVersionID] < V.[ContentItemVersionID]))));
         """;
 
     // 1. Counts per day and series, previous period + range.
