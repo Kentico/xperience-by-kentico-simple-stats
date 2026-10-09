@@ -58,13 +58,18 @@ namespace DancingGoat.ViewComponents
             if (consent != null)
             {
                 var currentLanguage = currentLanguageRetriever.Get();
+                var returnPagePath = webPageDataContextRetriever.TryRetrieve(out var currentWebPageContext)
+                    ? (await urlRetriever.Retrieve(currentWebPageContext.WebPage.WebPageItemID, currentLanguage, cancellationToken: HttpContext.RequestAborted)).RelativePath
+                    : (HttpContext.Request.PathBase + HttpContext.Request.Path).Value;
+
+                // Keeps campaign (UTM) parameters for the activities logged once the visitor agrees.
+                var returnPageUrl = returnPagePath + HttpContext.Request.QueryString.Value;
+
                 var consentModel = new ConsentViewModel
                 {
                     IsReadOnly = readOnlyModeProvider.IsReadOnly,
                     ConsentShortText = (await consent.GetConsentTextAsync(currentLanguage)).ShortText,
-                    ReturnPageUrl = webPageDataContextRetriever.TryRetrieve(out var currentWebPageContext)
-                        ? (await urlRetriever.Retrieve(currentWebPageContext.WebPage.WebPageItemID, currentLanguage, cancellationToken: HttpContext.RequestAborted)).RelativePath
-                        : (HttpContext.Request.PathBase + HttpContext.Request.Path).Value
+                    ReturnPageUrl = returnPageUrl
                 };
 
                 var contact = ContactManagementContext.CurrentContact;

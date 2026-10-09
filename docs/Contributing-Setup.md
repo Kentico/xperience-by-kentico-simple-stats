@@ -45,6 +45,14 @@ Running the sample project requires creating a new Xperience by Kentico database
 Change directory in your console to `./examples/DancingGoat` and follow the instructions in the Xperience
 documentation on [creating a new database](https://docs.kentico.com/documentation/developers-and-admins/installation#create-the-project-database).
 
+### Integration Test Database
+
+The integration tests (`tests/Kentico.Xperience.Labs.SimpleStats.Admin.IntegrationTests`) need a separate, empty Xperience database
+(not the DancingGoat one). Create it once with the `kentico-xperience-dbmanager` tool, from the repository root, and set
+`SIMPLESTATS_INTEGRATION_SQL` to its connection string. See the test project's
+[README](../tests/Kentico.Xperience.Labs.SimpleStats.Admin.IntegrationTests/README.md) for the commands. Without the variable, the
+integration tests are skipped.
+
 ### Admin Customization
 
 `examples/DancingGoat/appsettings.Development.json` runs the Admin customization in Proxy mode, so the admin loads the client from the `npm: watch - Admin/Client` dev server. Keep that task running while DancingGoat runs, or the Simple Stats (Labs) pages will not load. To use the built `Client/dist` bundle instead, remove this section (a rebuild and restart of DancingGoat is then needed to see client changes).

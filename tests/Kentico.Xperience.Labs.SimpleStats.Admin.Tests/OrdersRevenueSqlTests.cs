@@ -80,6 +80,7 @@ public class OrdersRevenueSqlTests
             nameof(OrderItemInfo.OrderItemQuantity),
             nameof(OrderItemInfo.OrderItemTotalPrice),
             nameof(OrderStatusInfo.OrderStatusID),
+            nameof(OrderStatusInfo.OrderStatusName),
             nameof(OrderStatusInfo.OrderStatusDisplayName),
             nameof(OrderStatusInfo.OrderStatusOrder),
         ];

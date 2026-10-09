@@ -121,14 +121,15 @@ public class OrdersRevenueReportBuilderTests
         {
             ByStatus =
             [
-                new(4, "Pending", 2, 20.005m),
-                new(2, "Payment failed", 0, 0m),
-                new(1, "Fulfilled", 5, 500m),
+                new(4, "Pending", "Pending", 2, 20.005m),
+                new(2, "PaymentFailed", "Payment failed", 0, 0m),
+                new(1, "Fulfilled", "Fulfilled", 5, 500m),
             ],
         };
 
         var result = OrdersRevenueReportBuilder.Build(query, data, statuses);
 
+        Assert.That(result.ByStatus.Items.Select(i => i.Tone), Is.EqualTo(new StatsTone?[] { StatsTone.Caution, StatsTone.Done }));
         Assert.That(result.ByStatus.Items.Select(i => i.Label), Is.EqualTo(new[] { "Pending", "Fulfilled" }));
         Assert.That(result.ByStatus.Items.Select(i => i.Key), Is.EqualTo(new[] { "status:4", "status:1" }));
         Assert.That(result.ByStatus.Items[0].Value, Is.EqualTo(2m));

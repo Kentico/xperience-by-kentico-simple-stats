@@ -13,6 +13,8 @@ namespace DancingGoat.Controllers
 {
     public class ConsentController : Controller
     {
+        private const string CONSENT_AGREE_HEADER = "X-Consent-Agree";
+
         private readonly ICurrentCookieLevelProvider cookieLevelProvider;
         private readonly IConsentAgreementService consentAgreementService;
         private readonly IInfoProvider<ConsentInfo> consentInfoProvider;
@@ -43,6 +45,12 @@ namespace DancingGoat.Controllers
                     consentAgreementService.Agree(contact, consent);
 
                     TempData[DancingGoatConstants.CONSENT_AGREED_TEMPDATA_KEY] = true;
+                }
+
+                // trackingConsent.js agrees in the background so the page, and the activity logging it re-runs, keeps its URL.
+                if (Request.Headers.ContainsKey(CONSENT_AGREE_HEADER))
+                {
+                    return ViewComponent("TrackingConsent");
                 }
 
                 return Redirect(returnUrl);

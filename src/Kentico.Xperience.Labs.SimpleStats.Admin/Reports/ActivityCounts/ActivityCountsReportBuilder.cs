@@ -28,7 +28,10 @@ internal static class ActivityCountsReportBuilder
             timeSeries.Total);
     }
 
-    private static string GetDisplayName(string activityType, IReadOnlyDictionary<string, string> displayNames)
+    /// <summary>
+    /// Display name of an activity type from <c>OM_ActivityType</c>, else the code name, else "(no type)". Shared by activity reports.
+    /// </summary>
+    internal static string GetDisplayName(string activityType, IReadOnlyDictionary<string, string> displayNames)
     {
         if (displayNames.TryGetValue(activityType, out string? name) && !string.IsNullOrWhiteSpace(name))
         {

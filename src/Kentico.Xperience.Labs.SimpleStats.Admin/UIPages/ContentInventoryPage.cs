@@ -33,10 +33,10 @@ public sealed class ContentInventoryPage(
 
     protected override async Task<ContentInventoryClientProperties> ConfigureReportProperties(ContentInventoryClientProperties properties)
     {
-        var query = new StatsSnapshotFilter().Normalize(ContentInventoryReportBuilder.Kinds);
+        var query = new StatsSnapshotFilter().Normalize(StatsContentKinds.Kinds);
 
         properties.Report = await contentInventoryService.GetReport(query, refresh: false, CancellationToken.None);
-        properties.Channels = await channelOptionsProvider.GetChannelOptions(ContentInventoryReportBuilder.ChannelTypes, CancellationToken.None);
+        properties.Channels = await channelOptionsProvider.GetChannelOptions(StatsContentKinds.ChannelTypes, CancellationToken.None);
         properties.PagePath = pageLinkGenerator.GetPath<ContentInventoryPage>();
 
         return properties;
@@ -46,10 +46,8 @@ public sealed class ContentInventoryPage(
     public async Task<ICommandResponse<ContentInventoryResult>> Load(StatsSnapshotLoadRequest request, CancellationToken cancellationToken)
     {
         // A channel that does not fit the kind (for example an email channel with pages) is dropped.
-        var channels = await channelOptionsProvider.GetChannelOptions(ContentInventoryReportBuilder.ChannelTypes, cancellationToken);
-        var query = (request?.Filter ?? new StatsSnapshotFilter()).Normalize(
-            ContentInventoryReportBuilder.Kinds,
-            (kind, channelId) => ContentInventoryReportBuilder.IsChannelAllowed(kind, channelId, channels));
+        var channels = await channelOptionsProvider.GetChannelOptions(StatsContentKinds.ChannelTypes, cancellationToken);
+        var query = StatsContentKinds.Normalize(request?.Filter, channels);
         var report = await contentInventoryService.GetReport(query, request?.Refresh ?? false, cancellationToken);
 
         return ResponseFrom(report);

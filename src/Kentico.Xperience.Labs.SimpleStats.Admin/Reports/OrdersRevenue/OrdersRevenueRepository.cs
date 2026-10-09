@@ -105,6 +105,7 @@ internal sealed class OrdersRevenueRepository : IOrdersRevenueRepository
     private static async Task<IReadOnlyList<OrdersRevenueStatusRow>> ReadByStatus(DbDataReader reader, CancellationToken cancellationToken)
     {
         int idOrdinal = reader.GetOrdinal(OrdersRevenueSql.StatusIdColumn);
+        int codeNameOrdinal = reader.GetOrdinal(OrdersRevenueSql.StatusCodeNameColumn);
         int nameOrdinal = reader.GetOrdinal(OrdersRevenueSql.StatusNameColumn);
         int ordersOrdinal = reader.GetOrdinal(OrdersRevenueSql.OrdersColumn);
         int revenueOrdinal = reader.GetOrdinal(OrdersRevenueSql.RevenueColumn);
@@ -114,6 +115,7 @@ internal sealed class OrdersRevenueRepository : IOrdersRevenueRepository
         {
             rows.Add(new(
                 reader.GetInt32(idOrdinal),
+                reader.GetString(codeNameOrdinal),
                 reader.GetString(nameOrdinal),
                 reader.GetInt32(ordersOrdinal),
                 reader.GetDecimal(revenueOrdinal)));

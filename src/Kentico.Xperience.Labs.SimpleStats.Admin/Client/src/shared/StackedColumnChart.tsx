@@ -51,7 +51,7 @@ export const StackedColumnChart = React.memo(function StackedColumnChart({
     const root = createChartRoot(chartId);
     root.numberFormatter.set('numberFormat', '#,###');
 
-    const tokens = getChartTokens();
+    const tokens = getChartTokens(root.dom);
 
     const chart = root.container.children.push(
       am5xy.XYChart.new(root, {
@@ -66,7 +66,7 @@ export const StackedColumnChart = React.memo(function StackedColumnChart({
     );
     chart.zoomOutButton.set('forceHidden', true);
 
-    const palette = getSeriesPalette();
+    const palette = getSeriesPalette(root.dom);
     if (palette.length > 0) {
       chart.get('colors')?.set('colors', palette);
     }
@@ -127,7 +127,7 @@ export const StackedColumnChart = React.memo(function StackedColumnChart({
         }),
       );
       // A fixed series color (for example error / warning / information) overrides the palette.
-      const fixedColor = item.color ? resolveToken(item.color) : undefined;
+      const fixedColor = item.color ? resolveToken(item.color, root.dom) : undefined;
       if (fixedColor) {
         columnSeries.set('fill', am5.color(fixedColor));
         columnSeries.set('stroke', am5.color(fixedColor));

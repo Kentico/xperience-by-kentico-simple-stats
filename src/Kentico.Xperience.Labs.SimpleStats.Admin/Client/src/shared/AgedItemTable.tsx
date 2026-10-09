@@ -14,10 +14,16 @@ export interface AgedItemCaptions {
   readonly category?: string;
   /** For example "Language". */
   readonly language?: string;
+  /** For example "Channel" (`item.channel`). */
+  readonly channel?: string;
   /** For example "Workflow step". */
   readonly detail?: string;
   /** For example "Last modified". */
   readonly since: string;
+  /** For example "Last modified" when `since` is another date (`item.lastModified`). */
+  readonly lastModified?: string;
+  /** For example "First published" when the days are counted to another date than now (`item.until`). */
+  readonly until?: string;
   /** For example "Days". */
   readonly days: string;
 }
@@ -36,8 +42,11 @@ export const AgedItemTable = ({ items, captions, getAdminHref }: AgedItemTablePr
       column('label', captions.label, 30, 100),
       ...(captions.category ? [column('category', captions.category, 16, 40)] : []),
       ...(captions.language ? [column('language', captions.language, 10, 24)] : []),
+      ...(captions.channel ? [column('channel', captions.channel, 14, 36)] : []),
       ...(captions.detail ? [column('detail', captions.detail, 16, 40)] : []),
       column('since', captions.since, 12, 20),
+      ...(captions.lastModified ? [column('lastModified', captions.lastModified, 12, 20)] : []),
+      ...(captions.until ? [column('until', captions.until, 12, 20)] : []),
       column('days', captions.days, 8, 14),
     ],
     [captions],
@@ -52,8 +61,11 @@ export const AgedItemTable = ({ items, captions, getAdminHref }: AgedItemTablePr
           adminLinkCell('label', item.label, getAdminHref ? getAdminHref(item) : null),
           ...(captions.category ? [stringCell('category', item.category ?? '–')] : []),
           ...(captions.language ? [stringCell('language', item.language ?? '–')] : []),
+          ...(captions.channel ? [stringCell('channel', item.channel ?? '–')] : []),
           ...(captions.detail ? [stringCell('detail', item.detail ?? '–')] : []),
           stringCell('since', item.since),
+          ...(captions.lastModified ? [stringCell('lastModified', item.lastModified ?? '–')] : []),
+          ...(captions.until ? [stringCell('until', item.until ?? '–')] : []),
           stringCell('days', numberFormat.format(item.days)),
         ],
       })),

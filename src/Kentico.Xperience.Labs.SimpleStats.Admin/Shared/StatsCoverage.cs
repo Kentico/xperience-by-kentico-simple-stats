@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
 
 /// <summary>
@@ -10,6 +12,13 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
 /// <param name="Total">Number that could have it.</param>
 public sealed record StatsCoverageItem(string Key, string Label, string? SecondaryLabel, int Covered, int Total)
 {
+    /// <summary>
+    /// Optional part of <see cref="Covered"/> that needs attention (for example outdated translations), shown as its own segment.
+    /// <c>null</c> (left out of the JSON) for lists without it.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Flagged { get; init; }
+
     /// <summary>
     /// Number that do not have it (<see cref="Total"/> - <see cref="Covered"/>, never below 0).
     /// </summary>

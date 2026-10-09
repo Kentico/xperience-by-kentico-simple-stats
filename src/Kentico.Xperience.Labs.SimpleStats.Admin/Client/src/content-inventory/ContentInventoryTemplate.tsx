@@ -3,12 +3,18 @@ import {
   CalloutPlacementType,
   CalloutType,
   InfoCard,
-  NameToggleButton,
 } from '@kentico/xperience-admin-components';
 import React, { useCallback, useMemo, useState } from 'react';
 
 import { toAdminHref } from '../shared/adminLinks';
 import { AgedItemCaptions, AgedItemTable, toDaysRankedItems } from '../shared/AgedItemTable';
+import {
+  channelsForContentKind,
+  contentKindLabel,
+  contentKindOptions,
+  fitContentChannel,
+} from '../shared/contentKinds';
+import { usageHint } from '../shared/contentUsage';
 import { CoverageBarChart, CoverageCaptions } from '../shared/CoverageBarChart';
 import { CoverageTable } from '../shared/CoverageTable';
 import {
@@ -22,7 +28,7 @@ import { formatShare, numberFormat } from '../shared/format';
 import { RankedBarChart } from '../shared/RankedBarChart';
 import { RankedTable } from '../shared/RankedTable';
 import { ShareTable } from '../shared/ShareTable';
-import { allKindsId, SnapshotFilterBar, SnapshotKindOptions } from '../shared/SnapshotFilterBar';
+import { SnapshotFilterBar } from '../shared/SnapshotFilterBar';
 import { StatsTile } from '../shared/StatsTile';
 import {
   StatsAgedItem,
@@ -57,6 +63,17 @@ interface ContentWorkflowSummary {
   readonly items: readonly StatsAgedItem[];
 }
 
+/** Mirrors `ContentForgottenEditsSummary`. */
+interface ContentForgottenEditsSummary {
+  /** Published variants with a newer draft. */
+  readonly pendingDrafts: number;
+  /** Of `pendingDrafts`, drafts unchanged for more than `overdueDays`. */
+  readonly forgotten: number;
+  readonly overdueDays: number;
+  /** Least recently changed draft first. `since` is the draft's last change; `detail` is "Live since" plus the step when in one. */
+  readonly items: readonly StatsAgedItem[];
+}
+
 /** Mirrors `UnusedReusableSummary`. */
 interface UnusedReusableSummary {
   readonly count: number;
@@ -82,6 +99,7 @@ interface ContentInventoryResult {
   readonly languageCoverage: readonly StatsCoverageItem[];
   readonly age: ContentAgeSummary;
   readonly workflow: ContentWorkflowSummary;
+  readonly forgottenEdits: ContentForgottenEditsSummary;
   /** `null` when the filters exclude reusable items. */
   readonly unusedReusable: UnusedReusableSummary | null;
   readonly totalVariants: number;
@@ -102,31 +120,6 @@ interface ContentInventoryTemplateProps {
   /** Path of this page relative to the admin root, used to build admin links. */
   readonly pagePath: string | null;
 }
-
-/** Labels of the content type types (`ClassContentTypeType` values), as named in the Content types application. */
-const kindLabels: Readonly<Record<string, string>> = {
-  Website: 'Pages',
-  Reusable: 'Reusable content',
-  Email: 'Emails',
-  Headless: 'Headless items',
-};
-
-/** Channel type (`ChannelType`) of the items of each kind. Reusable items have no channel. */
-const kindChannelTypes: Readonly<Record<string, string>> = {
-  Website: 'Website',
-  Email: 'Email',
-  Headless: 'Headless',
-};
-
-const kindItems: NameToggleButton[] = [
-  { id: allKindsId, label: 'All' },
-  { id: 'Website', label: 'Pages' },
-  { id: 'Reusable', label: 'Reusable' },
-  { id: 'Email', label: 'Emails' },
-  { id: 'Headless', label: 'Headless' },
-];
-
-const kinds: SnapshotKindOptions = { label: 'Content', items: kindItems };
 
 const contentTypeCaptions: StatsRankedCaptions = {
   label: 'Content type',
@@ -160,6 +153,19 @@ const oldestCaptions: AgedItemCaptions = {
 
 const workflowCaptions: AgedItemCaptions = { ...oldestCaptions, detail: 'Workflow step' };
 
+const forgottenDaysCaptions: StatsRankedCaptions = {
+  label: 'Item',
+  secondaryLabel: 'Content type',
+  value: 'Days since draft changed',
+};
+
+const forgottenCaptions: AgedItemCaptions = {
+  ...oldestCaptions,
+  channel: 'Channel',
+  detail: 'Published version',
+  since: 'Draft changed',
+};
+
 const unusedCaptions: AgedItemCaptions = {
   label: 'Item',
   category: 'Content type',
@@ -185,20 +191,8 @@ const statusHint =
 const workflowHint =
   'The time an item entered its step is not stored, so days count from the last change of the language variant.';
 
-const usageHint =
-  'An item counts as used when another content item references it, in any language or version: through the content item selector or rich text editor (in content type fields or Page and Email Builder component properties), or through custom components with a reference extractor. References that exist only in code are not tracked.';
-
-function kindLabel(kind: string | null): string {
-  return kind ? (kindLabels[kind] ?? kind) : 'All';
-}
-
-function channelsForKind(
-  channels: readonly StatsChannelOption[],
-  kind: string | null,
-): readonly StatsChannelOption[] {
-  const type = kind ? kindChannelTypes[kind] : undefined;
-  return type ? channels.filter((channel) => channel.type === type) : [];
-}
+const forgottenHint =
+  'Published items with a newer draft. Visitors see the published version until the draft is published. Drafts scheduled to publish are left out (see Publishing calendar). Items in workflow steps also appear in Action needed.';
 
 function toFilter(report: ContentInventoryResult): StatsSnapshotFilter {
   return { kind: report.kind, channelId: report.channelId };
@@ -217,14 +211,12 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
   const [filter, setFilter] = useState<StatsSnapshotFilter>(() => toFilter(props.report));
 
   const channels = useMemo(
-    () => channelsForKind(props.channels, filter.kind),
+    () => channelsForContentKind(props.channels, filter.kind),
     [props.channels, filter.kind],
   );
 
   const handleFilterChange = (next: StatsSnapshotFilter) => {
-    // The channel filter applies only to pages, emails and headless items, with a channel of the matching type.
-    const fits = channelsForKind(props.channels, next.kind).some((c) => c.id === next.channelId);
-    const normalized = fits ? next : { ...next, channelId: null };
+    const normalized = fitContentChannel(props.channels, next);
     setFilter(normalized);
     void load(normalized);
   };
@@ -248,7 +240,7 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
     () =>
       report.byContentType.items.map((item) => ({
         ...item,
-        secondaryLabel: item.secondaryLabel ? kindLabel(item.secondaryLabel) : null,
+        secondaryLabel: item.secondaryLabel ? contentKindLabel(item.secondaryLabel) : null,
       })),
     [report.byContentType.items],
   );
@@ -266,8 +258,9 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
     [report.age.buckets.items],
   );
 
-  const { workflow, age, unusedReusable: unused } = report;
+  const { workflow, forgottenEdits, age, unusedReusable: unused } = report;
   const oldestDays = useMemo(() => toDaysRankedItems(age.oldest), [age.oldest]);
+  const forgottenDays = useMemo(() => toDaysRankedItems(forgottenEdits.items), [forgottenEdits.items]);
   const workflowDays = useMemo(
     () => toDaysRankedItems(workflow.items, (item) => item.detail),
     [workflow.items],
@@ -277,7 +270,7 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
   const publishedShare = report.totalVariants > 0 ? published / report.totalVariants : 0;
 
   const kindText = report.byKind.items
-    .map((item) => `${numberFormat.format(item.value)} ${kindLabel(item.key).toLowerCase()}`)
+    .map((item) => `${numberFormat.format(item.value)} ${contentKindLabel(item.key).toLowerCase()}`)
     .join(' · ');
 
   const scheduledText = [
@@ -332,6 +325,14 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
     );
   };
 
+  const exportForgottenCsv = () => {
+    saveCsv(
+      'content-inventory-forgotten-edits',
+      `content-inventory-forgotten-edits_${fileSuffix}.csv`,
+      toAgedCsv(forgottenEdits.items, forgottenCaptions, getAgedHref),
+    );
+  };
+
   const exportUnusedCsv = () => {
     if (unused) {
       saveCsv('content-inventory-unused-reusable', `content-inventory-unused-reusable.csv`, toAgedCsv(unused.items, unusedCaptions, getAgedHref));
@@ -359,7 +360,7 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
       <SnapshotFilterBar
         filter={filter}
         onChange={handleFilterChange}
-        kinds={kinds}
+        kinds={contentKindOptions}
         channels={channels}
         onRefresh={handleRefresh}
         isLoading={isLoading}
@@ -371,7 +372,7 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
           caption="Content items"
           tooltip="Content items that match the filters. Page folders are not counted. Each item counts once, whatever the number of languages."
           text={numberFormat.format(report.totalItems)}
-          details={kindText || kindLabel(report.kind)}
+          details={kindText || contentKindLabel(report.kind)}
         />
         <InfoCard
           caption="Content types in use"
@@ -429,6 +430,29 @@ export const ContentInventoryTemplate = (props: ContentInventoryTemplateProps) =
           )}
         />
       )}
+
+      <StatsTile
+        headline="Forgotten edits: unpublished changes"
+        description={`${forgottenHint} Least recently changed draft first; ${numberFormat.format(forgottenEdits.forgotten)} of ${numberFormat.format(forgottenEdits.pendingDrafts)} unchanged for more than ${forgottenEdits.overdueDays} days (highlighted). Click an item to open it. ${listedText(forgottenEdits.items.length, forgottenEdits.pendingDrafts)}`}
+        isLoading={isLoading}
+        hasError={hasError}
+        isEmpty={forgottenEdits.pendingDrafts === 0}
+        emptyMessage="No published items have unpublished changes."
+        onExportCsv={exportForgottenCsv}
+        renderChart={() => (
+          <RankedBarChart
+            items={forgottenDays}
+            captions={forgottenDaysCaptions}
+            ariaLabel="Days since the draft of published items changed"
+            getHref={getAdminHref}
+            showShare={false}
+            highlightFrom={forgottenEdits.overdueDays + 1}
+          />
+        )}
+        renderTable={() => (
+          <AgedItemTable items={forgottenEdits.items} captions={forgottenCaptions} getAdminHref={getAgedHref} />
+        )}
+      />
 
       <div className="SimpleStats-tiles">
         <StatsTile

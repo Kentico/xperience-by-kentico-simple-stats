@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
 
 /// <summary>
@@ -21,6 +23,27 @@ public sealed record StatsAgedItem(
 {
     /// <inheritdoc cref="StatsRankedItem.AdminPath"/>
     public string? AdminPath { get; init; }
+
+    /// <summary>
+    /// Optional channel text (for example "Content hub - Marketing" for reusable items, see <see cref="StatsContentChannels"/>).
+    /// <c>null</c> (left out of the JSON) for lists without a channel column.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Channel { get; init; }
+
+    /// <summary>
+    /// Optional date of the last change when the age counts from something else (for example a lock), server date.
+    /// <c>null</c> (left out of the JSON) for lists without it.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateOnly? LastModified { get; init; }
+
+    /// <summary>
+    /// Optional date the days are counted to when it is not the read time (for example the first publish), server date.
+    /// <c>null</c> (left out of the JSON) for lists without it.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateOnly? Until { get; init; }
 
     /// <summary>
     /// Returns whole days from <paramref name="since"/> to <paramref name="now"/>, never below 0.

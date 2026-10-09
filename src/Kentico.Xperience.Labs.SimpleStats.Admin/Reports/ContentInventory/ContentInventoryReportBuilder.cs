@@ -12,24 +12,15 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
 /// </summary>
 internal static class ContentInventoryReportBuilder
 {
-    /// <summary>
-    /// Content type types the kind filter supports (<see cref="ClassContentTypeType"/>).
-    /// </summary>
-    public static IReadOnlyList<string> Kinds { get; } =
-    [
-        ClassContentTypeType.WEBSITE,
-        ClassContentTypeType.REUSABLE,
-        ClassContentTypeType.EMAIL,
-        ClassContentTypeType.HEADLESS,
-    ];
+    /// <inheritdoc cref="StatsContentKinds.Kinds"/>
+    public static IReadOnlyList<string> Kinds => StatsContentKinds.Kinds;
 
-    /// <summary>
-    /// Channel types in the channel filter, in this order.
-    /// </summary>
-    public static IReadOnlyList<ChannelType> ChannelTypes { get; } = [ChannelType.Website, ChannelType.Email, ChannelType.Headless];
+    /// <inheritdoc cref="StatsContentKinds.ChannelTypes"/>
+    public static IReadOnlyList<ChannelType> ChannelTypes => StatsContentKinds.ChannelTypes;
 
     /// <summary>
     /// Days a language variant can wait unchanged in a workflow step before it counts as waiting too long.
+    /// Also the days a newer draft of a published variant can stay unchanged before it counts as a forgotten edit.
     /// </summary>
     public const int OverdueDays = 14;
 
@@ -37,6 +28,12 @@ internal static class ContentInventoryReportBuilder
     /// Rows of each item list (oldest variants, workflow, unused reusable items).
     /// </summary>
     public const int ListLimit = 25;
+
+    /// <summary>
+    /// Months without a change after which a language variant is stale (the "Over 12 months" age bucket).
+    /// See <see cref="ContentInventorySql.GetStaleBefore"/>.
+    /// </summary>
+    public const int StaleMonths = 12;
 
     // Status keys, also used by the client.
     public const string PublishedKey = "published";
@@ -51,25 +48,12 @@ internal static class ContentInventoryReportBuilder
     public const string Months6To12Key = "6-12-months";
     public const string Over12MonthsKey = "over-12-months";
 
-    /// <summary>
-    /// Returns the channel type items of a kind are in, or <c>null</c> for kinds without a channel (reusable) and for all kinds.
-    /// </summary>
-    public static ChannelType? GetChannelType(string? kind) =>
-        kind switch
-        {
-            ClassContentTypeType.WEBSITE => ChannelType.Website,
-            ClassContentTypeType.EMAIL => ChannelType.Email,
-            ClassContentTypeType.HEADLESS => ChannelType.Headless,
-            _ => null,
-        };
+    /// <inheritdoc cref="StatsContentKinds.GetChannelType"/>
+    public static ChannelType? GetChannelType(string? kind) => StatsContentKinds.GetChannelType(kind);
 
-    /// <summary>
-    /// Returns <c>true</c> when the channel exists and fits the kind: the channel filter applies only to
-    /// pages, emails and headless items, and only with a channel of the matching type.
-    /// </summary>
+    /// <inheritdoc cref="StatsContentKinds.IsChannelAllowed"/>
     public static bool IsChannelAllowed(string? kind, int channelId, IEnumerable<StatsChannelOption> channels) =>
-        GetChannelType(kind) is ChannelType type
-        && channels.Any(c => c.Id == channelId && string.Equals(c.Type, type.ToString(), StringComparison.Ordinal));
+        StatsContentKinds.IsChannelAllowed(kind, channelId, channels);
 
     /// <summary>
     /// Returns <c>true</c> when the filters can match reusable items (all kinds or reusable, no channel).
@@ -158,6 +142,7 @@ internal static class ContentInventoryReportBuilder
             coverage,
             BuildAge(query, data, itemPath),
             BuildWorkflow(data, inWorkflow, getWorkflowPath, itemPath),
+            BuildForgottenEdits(data, getWorkflowPath, itemPath),
             IncludesReusable(query) ? BuildUnused(data, contentTypes, getContentTypePath, itemPath) : null,
             totalVariants,
             statuses.Sum(s => s.ScheduledPublish),
@@ -211,12 +196,7 @@ internal static class ContentInventoryReportBuilder
 
         var buckets = StatsRankedBuilder.BuildSnapshot(
             query.ChannelId,
-            [
-                new StatsRankedEntry(Under3MonthsKey, "Under 3 months", null, age.Under3Months, null, null),
-                new StatsRankedEntry(Months3To6Key, "3–6 months", null, age.Months3To6, null, null),
-                new StatsRankedEntry(Months6To12Key, "6–12 months", null, age.Months6To12, null, null),
-                new StatsRankedEntry(Over12MonthsKey, "Over 12 months", null, age.Over12Months, null, null),
-            ],
+            GetAgeEntries(age),
             total,
             0,
             limit: int.MaxValue,
@@ -229,6 +209,19 @@ internal static class ContentInventoryReportBuilder
 
         return new(buckets, Math.Max(age.Over12Months, 0), oldest);
     }
+
+    /// <summary>
+    /// Age buckets in a fixed order (under 3 months, 3–6, 6–12, over <see cref="StaleMonths"/> months), 0 included.
+    /// </summary>
+    /// <param name="counts">Value of each bucket (for example language variants).</param>
+    /// <param name="secondary">Optional secondary value of each bucket (for example page visits).</param>
+    public static IReadOnlyList<StatsRankedEntry> GetAgeEntries(ContentAgeRow counts, ContentAgeRow? secondary = null) =>
+    [
+        new(Under3MonthsKey, "Under 3 months", null, counts.Under3Months, secondary?.Under3Months, null),
+        new(Months3To6Key, "3–6 months", null, counts.Months3To6, secondary?.Months3To6, null),
+        new(Months6To12Key, "6–12 months", null, counts.Months6To12, secondary?.Months6To12, null),
+        new(Over12MonthsKey, "Over 12 months", null, counts.Over12Months, secondary?.Over12Months, null),
+    ];
 
     private static ContentWorkflowSummary BuildWorkflow(
         ContentInventoryData data,
@@ -246,6 +239,43 @@ internal static class ContentInventoryReportBuilder
             .ToList();
 
         return new(Math.Max(inWorkflow, items.Count), Math.Max(data.WorkflowOverdue, 0), OverdueDays, items);
+    }
+
+    private static ContentForgottenEditsSummary BuildForgottenEdits(
+        ContentInventoryData data,
+        Func<int, string?> getWorkflowPath,
+        Func<ContentItemLink?, string?> itemPath)
+    {
+        var items = data.PendingDrafts
+            .Select(v => ToAgedItem(v, data.Now) with
+            {
+                Detail = GetLiveText(v),
+                AdminPath = itemPath(v.Link) ?? (v.WorkflowId is int workflowId ? getWorkflowPath(workflowId) : null),
+                Channel = StatsContentChannels.GetLabel(v.Channel, v.IsReusable, v.Workspace),
+            })
+            .ToList();
+
+        int pending = Math.Max(data.PendingDraftCount, items.Count);
+
+        return new(pending, Math.Clamp(data.ForgottenEditCount, 0, pending), OverdueDays, items);
+    }
+
+    /// <summary>
+    /// "Live since yyyy-MM-dd" (the last publish of the published version), plus the workflow step when the draft is in one.
+    /// </summary>
+    private static string? GetLiveText(ContentVariantRow variant)
+    {
+        string? live = variant.LivePublishedWhen is DateTime published
+            ? $"Live since {DateOnly.FromDateTime(published).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}"
+            : null;
+        string? step = GetStepText(variant);
+
+        return (live, step) switch
+        {
+            (string l, string s) => $"{l} · {s}",
+            (string l, null) => l,
+            (null, var s) => s,
+        };
     }
 
     /// <summary>
