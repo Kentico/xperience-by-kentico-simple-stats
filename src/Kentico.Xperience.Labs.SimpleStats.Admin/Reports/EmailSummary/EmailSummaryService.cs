@@ -77,7 +77,13 @@ internal sealed class EmailSummaryService(
     /// <summary>
     /// Path of the email's Statistics tab, for example <c>/emails-1/en/list/3/statistics</c>.
     /// </summary>
-    private string? GetStatisticsPath(int emailId, int? emailChannelId, string? languageName)
+    private string? GetStatisticsPath(int emailId, int? emailChannelId, string? languageName) =>
+        GetStatisticsPath(adminLinks, emailId, emailChannelId, languageName);
+
+    /// <summary>
+    /// Path of the email's Statistics tab, or <c>null</c> without a channel or language. Shared with the contact stats tab.
+    /// </summary>
+    internal static string? GetStatisticsPath(IStatsAdminLinks adminLinks, int emailId, int? emailChannelId, string? languageName)
     {
         if (emailChannelId is not int channelId || string.IsNullOrEmpty(languageName))
         {

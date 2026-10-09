@@ -2,6 +2,7 @@
 import { ActivityCountsTemplate as ActivityCounts } from './activity-counts/ActivityCountsTemplate';
 import { CampaignSourcesTemplate as CampaignSources } from './campaign-sources/CampaignSourcesTemplate';
 import { ConsentsTemplate as Consents } from './consents/ConsentsTemplate';
+import { ContactStatsTemplate as ContactStats } from './contact-stats/ContactStatsTemplate';
 import { ContentInventoryTemplate as ContentInventory } from './content-inventory/ContentInventoryTemplate';
 import { ContentLocksTemplate as ContentLocks } from './content-locks/ContentLocksTemplate';
 import { CustomersTemplate as Customers } from './customers/CustomersTemplate';
@@ -46,5 +47,6 @@ export const ConsentsTemplate = withExportPermission(Consents);
 export const EmailSummaryTemplate = withExportPermission(EmailSummary);
 export const RecipientListsTemplate = withExportPermission(RecipientLists);
 export const WebPageStatsTemplate = withExportPermission(WebPageStats);
+export const ContactStatsTemplate = withExportPermission(ContactStats);
 
 export { NoReportsTemplate } from './no-reports/NoReportsTemplate';

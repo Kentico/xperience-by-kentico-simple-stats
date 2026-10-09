@@ -55,6 +55,7 @@ Sections have no permission of their own. A section is hidden when the role has 
 | Email summary          | `SimpleStats.EmailSummary`        |
 | Recipient lists        | `SimpleStats.RecipientLists`      |
 | Web page stats         | `SimpleStats.WebPageStats`        |
+| Contact stats          | `SimpleStats.ContactStats`        |
 | Export                 | `SimpleStats.Export`              |
 
 The **Export** permission only hides the buttons. The CSV is built in the browser from the data the report already shows, so a role that can see a report can still copy its numbers. It is not data protection.
@@ -141,6 +142,25 @@ Shows which campaigns bring visitors to the page. Uses the UTM values stored on 
 - **Export CSV** - each tile has its own export: `web-page-stats-campaign-sources` and `web-page-stats-campaign-content`.
 
 `utm_medium` and `utm_campaign` are not stored (no activity column), so they are not shown.
+
+### Contact stats
+
+A **Stats (Labs)** tab on each contact in **Contact management** (after the contact's other tabs). The product's **Activities** tab is a plain list; this tab shows the same contact's activities as trends and short insights. Only that one contact's data is shown, aggregated.
+
+- **Filters** - date range with an **All time** preset (default: from the contact's creation or its first activity, whichever is earlier, to today), grouping, and **Activity types** (several can be selected; none selected means all). The type options are the types this contact has. The type filter applies to every KPI, tile and insight; a tile whose activity type is not selected shows a short message instead of data. No channel filter.
+- **Insights** - short lines built from the numbers (no AI), shown only when they apply: "Active on N of the last M days" (or "Not seen for N days" when the newest activity is more than 30 days old), "Activity up/down X% vs previous N days" (not for All time), "Most visited: page", "Top interest: tag (taxonomy)" (else the top content type), "Came from source in N of M sessions" (with UTM data), "Submitted form N times" (the most recently submitted form).
+- **KPIs** - activities (with the change vs the previous period of the same length; not for All time), sessions (landing page activities: one per browsing session), active days (distinct days with any activity), last seen (newest activity of the selected types, any date).
+- **Tiles**
+  - "Activity over time" - activities per period, stacked by type.
+  - "When active" - activities by weekday and hour (server time zone). Switch hour labels between 24h and 12h; the CSV always uses 0-23. Not loaded with the tab: select **Generate heatmap**. After that it follows filter changes and **Refresh** until the page is reloaded.
+  - "Pages visited" - page visits per page and language, with the channel. Links open the live page.
+  - "Forms submitted" and "Emails clicked" - submissions per form and clicks per email, with the last date. Links open the form's submissions and the email's statistics. Deleted forms and emails show as "(deleted form)" / "(deleted email)".
+  - "Campaign sources" - sessions per UTM source and content. Shown only when the site stores UTM values (see [UTM capture (optional)](#utm-capture-optional)).
+  - "Interests" - switch between **Tags** (default) and **Content types**. Tags: page visits per tag of the visited page and of the items its published version links to (one level, including images), in the visit's language (else another language variant of the item). A visit counts once per tag, so the numbers do not add up. Filter by **Taxonomy** to focus. Content types: page visits per content type of the visited page. Pages that no longer exist are left out of both.
+- **All activities** - opens the contact's product **Activities** tab with the full list.
+- **Export CSV** - `contact-stats-series`, `contact-stats-heatmap`, `contact-stats-pages`, `contact-stats-forms`, `contact-stats-emails`, `contact-stats-campaigns`, `contact-stats-interests`, `contact-stats-tags`.
+
+The tab requires the **Contact stats** permission of **Simple Stats (Labs)** (on top of the Contact management permissions); without it the tab is hidden and the page shows "Access denied" when opened by URL. It shows per-contact behavior data, so grant it like other contact data.
 
 ### New contacts
 
@@ -539,6 +559,7 @@ A handler exception is logged and does not fail the export. Handlers run one aft
 | Top pages              | `top-pages`                                                                                                                                                                                                  |
 | Campaign sources       | `campaign-sources-series`, `campaign-sources-sources`, `campaign-sources-pages`, `campaign-sources-content`                                                                                                  |
 | Web page stats         | `web-page-stats`, `web-page-stats-campaign-sources`, `web-page-stats-campaign-content`                                                                                                                       |
+| Contact stats          | `contact-stats-series`, `contact-stats-heatmap`, `contact-stats-pages`, `contact-stats-forms`, `contact-stats-emails`, `contact-stats-campaigns`, `contact-stats-interests`, `contact-stats-tags`            |
 | New contacts           | `new-contacts`, `new-contacts-share`                                                                                                                                                                         |
 | Form submissions       | `form-submissions`, `form-submissions-by-form`                                                                                                                                                               |
 | Member registrations   | `members-growth`, `members-sign-in-type`, `members-by-role`                                                                                                                                                  |

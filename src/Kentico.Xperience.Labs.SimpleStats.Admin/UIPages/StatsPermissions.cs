@@ -78,6 +78,12 @@ public static class StatsPermissions
     public const string WEB_PAGE_STATS_DISPLAY_NAME = "Web page stats";
 
     /// <summary>
+    /// Shows the "Stats (Labs)" tab of contacts in Contact management (per-contact behavior data). Not tied to a page of this application.
+    /// </summary>
+    public const string CONTACT_STATS = PREFIX + "ContactStats";
+    public const string CONTACT_STATS_DISPLAY_NAME = "Contact stats";
+
+    /// <summary>
     /// Shows "Export CSV" in all reports. Not tied to a report page.
     /// </summary>
     public const string EXPORT = PREFIX + "Export";

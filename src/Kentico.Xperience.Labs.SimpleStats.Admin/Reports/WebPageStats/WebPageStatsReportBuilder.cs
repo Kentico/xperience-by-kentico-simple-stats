@@ -1,5 +1,6 @@
 using CMS.Activities;
 
+using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ActivityCounts;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
 
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.WebPageStats;
@@ -93,13 +94,6 @@ internal static class WebPageStatsReportBuilder
             .Where(s => string.Equals(s.Key, activityType, StringComparison.OrdinalIgnoreCase))
             .Sum(s => s.Total);
 
-    private static string GetDisplayName(string activityType, IReadOnlyDictionary<string, string> displayNames)
-    {
-        if (displayNames.TryGetValue(activityType, out string? name) && !string.IsNullOrWhiteSpace(name))
-        {
-            return name;
-        }
-
-        return string.IsNullOrWhiteSpace(activityType) ? "(no type)" : activityType;
-    }
+    private static string GetDisplayName(string activityType, IReadOnlyDictionary<string, string> displayNames) =>
+        ActivityCountsReportBuilder.GetDisplayName(activityType, displayNames);
 }

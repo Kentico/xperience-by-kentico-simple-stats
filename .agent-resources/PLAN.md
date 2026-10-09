@@ -41,6 +41,7 @@ Design goals:
 **Contacts and contact groups**
 
 - Contact group sizes over time. Membership is current state only, so this needs a scheduled task that saves daily counts to a custom table.
+- Contact stats tab: "Stats (Labs)" tab on each contact (Contact management, parent `ContactEditSection`, order 1001) with activity trends, when active, pages, forms, emails, campaign sources, insights. Own permission. Spec: `.agent-resources/REPORT-22-CONTACT-STATS.md`. _Follow-up: tag interests fall back to the lowest-ID language variant; should follow the language fallback chain, then the default language (see spec "Interests by tag")._
 
 **Emails**
 

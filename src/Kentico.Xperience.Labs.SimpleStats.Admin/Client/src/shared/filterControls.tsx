@@ -1,6 +1,8 @@
 import {
   Button,
   ButtonColor,
+  DropDownPlacement,
+  DropDownSelectMenu,
   MenuItem,
   NameToggleButton,
   NameToggleButtons,
@@ -133,6 +135,81 @@ export const TextSelect = ({ label, allLabel, options, value, onChange }: TextSe
           <MenuItem key={option.value} primaryLabel={option.label} value={textOptionPrefix + option.value} />
         ))}
       </Select>
+    </div>
+  );
+};
+
+/** Option of a `MultiSelect`. */
+export interface MultiSelectOption {
+  readonly value: string;
+  readonly label: string;
+  readonly secondaryLabel?: string;
+}
+
+export interface MultiSelectProps {
+  /** Label above the select, for example "Activity types". */
+  readonly label: string;
+  /** Text of the button when nothing is selected (which means all), for example "All types". */
+  readonly allLabel: string;
+  /** Plural noun for the button text with several values selected, for example "types" ("3 types"). */
+  readonly noun: string;
+  readonly options: readonly MultiSelectOption[];
+  /** Selected values. Empty means all. */
+  readonly value: readonly string[];
+  readonly onChange: (value: string[]) => void;
+}
+
+/**
+ * Filter bar item that selects several text values (empty = all), for example activity types.
+ * The admin components have no multi-select field, so this is a drop-down select menu with multi-select items.
+ * Each click applies the change.
+ */
+export const MultiSelect = ({ label, allLabel, noun, options, value, onChange }: MultiSelectProps) => {
+  const selected = new Set(value);
+  const buttonText =
+    value.length === 0
+      ? allLabel
+      : value.length === 1
+        ? options.find((o) => o.value === value[0])?.label ?? value[0]
+        : `${value.length} ${noun}`;
+
+  const toggle = (optionValue: string) => {
+    const next = selected.has(optionValue)
+      ? value.filter((v) => v !== optionValue)
+      : [...value, optionValue];
+    // Every option selected is the same as all.
+    onChange(next.length === options.length ? [] : next);
+  };
+
+  return (
+    <div className="SimpleStats-filterItem SimpleStats-filterItem--channel">
+      <span className="SimpleStats-label">{label}</span>
+      <DropDownSelectMenu
+        placement={DropDownPlacement.BottomStart}
+        maxContentHeight="320px"
+        renderTrigger={(ref, onTriggerClick) => (
+          <div ref={ref as React.RefObject<HTMLDivElement>}>
+            <Button
+              label={buttonText}
+              trailingIcon="xp-chevron-down"
+              color={ButtonColor.Secondary}
+              onClick={onTriggerClick}
+            />
+          </div>
+        )}
+      >
+        <MenuItem primaryLabel={allLabel} selected={value.length === 0} onClick={() => onChange([])} />
+        {options.map((option) => (
+          <MenuItem
+            key={option.value}
+            primaryLabel={option.label}
+            secondaryLabel={option.secondaryLabel}
+            isMultiSelect
+            selected={selected.has(option.value)}
+            onClick={() => toggle(option.value)}
+          />
+        ))}
+      </DropDownSelectMenu>
     </div>
   );
 };

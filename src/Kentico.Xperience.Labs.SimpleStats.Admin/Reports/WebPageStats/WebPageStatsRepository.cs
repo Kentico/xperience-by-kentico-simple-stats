@@ -230,10 +230,5 @@ internal sealed class WebPageStatsRepository : IWebPageStatsRepository
     /// Returns the hosts as <c>|host1|host2|</c> for the <c>@FormUrlHosts</c> parameter, or an empty string for none.
     /// Hosts with a '|' (not a valid host character) are skipped.
     /// </summary>
-    internal static string FormatHosts(IReadOnlyList<string> hosts)
-    {
-        var valid = hosts.Where(host => !string.IsNullOrEmpty(host) && !host.Contains('|')).ToList();
-
-        return valid.Count == 0 ? string.Empty : "|" + string.Join('|', valid) + "|";
-    }
+    internal static string FormatHosts(IReadOnlyList<string> hosts) => StatsSql.FormatDelimitedList(hosts);
 }
