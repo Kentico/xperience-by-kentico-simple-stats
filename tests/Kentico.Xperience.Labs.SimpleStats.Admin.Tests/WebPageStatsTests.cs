@@ -153,6 +153,11 @@ public class WebPageStatsTests
     [TestCase("mysite.com/path", "mysite.com")]
     [TestCase("https://mysite.com/", "mysite.com")]
     [TestCase(" localhost ", "localhost")]
+    [TestCase("https://h", "h")]
+    [TestCase("https://h/", "h")]
+    [TestCase("https://h?x=1", "h")]
+    [TestCase("https://h#f", "h")]
+    [TestCase("https://h:8080/p?x", "h:8080")]
     public void UrlPath_NormalizeHost(string domain, string expected) =>
         Assert.That(WebPageStatsUrlPath.NormalizeHost(domain), Is.EqualTo(expected));
 

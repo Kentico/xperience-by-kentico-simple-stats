@@ -50,9 +50,8 @@ internal sealed class WebPageStatsRepository : IWebPageStatsRepository
             CROSS APPLY (SELECT CASE WHEN P.[PathStart] > 0 THEN SUBSTRING(A.[ActivityURL], P.[PathStart], 4000) ELSE N'' END AS [RawPath]) R
             CROSS APPLY (SELECT PATINDEX(N'%[?#]%', R.[RawPath]) AS [Cut]) U
             CROSS APPLY (SELECT CASE WHEN U.[Cut] > 0 THEN LEFT(R.[RawPath], U.[Cut] - 1) ELSE R.[RawPath] END AS [UrlPath]) Q
-            CROSS APPLY (SELECT CASE WHEN S.[SchemeEnd] > 0
-                THEN SUBSTRING(A.[ActivityURL], S.[SchemeEnd] + 3, CASE WHEN P.[PathStart] > 0 THEN P.[PathStart] ELSE LEN(A.[ActivityURL]) + 1 END - (S.[SchemeEnd] + 3))
-                ELSE N'' END AS [UrlHost]) H
+            CROSS APPLY (SELECT CASE WHEN S.[SchemeEnd] > 0 THEN SUBSTRING(A.[ActivityURL], S.[SchemeEnd] + 3, 4000) + N'/' ELSE N'' END AS [AfterScheme]) HR
+            CROSS APPLY (SELECT CASE WHEN S.[SchemeEnd] > 0 THEN LEFT(HR.[AfterScheme], PATINDEX(N'%[/?#]%', HR.[AfterScheme]) - 1) ELSE N'' END AS [UrlHost]) H
             WHERE @MatchForms = 1
                 AND A.[ActivityType] = @FormSubmitType
                 AND A.[ActivityChannelID] = @ChannelID
