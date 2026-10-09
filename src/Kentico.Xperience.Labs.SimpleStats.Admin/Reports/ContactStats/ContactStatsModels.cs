@@ -184,6 +184,19 @@ internal sealed record ContactStatsData(
 }
 
 /// <summary>
+/// Tag interests of one contact, read by their own batch (the only data that depends on the taxonomy filter).
+/// The service copies them into <see cref="ContactStatsData"/>.
+/// </summary>
+internal sealed record ContactStatsTagData(
+    IReadOnlyList<ContactStatsTagRow> Tags,
+    int TagCount,
+    int TagVisits,
+    IReadOnlyList<TagUsageTaxonomyOption> TaxonomyOptions)
+{
+    public static ContactStatsTagData Empty { get; } = new([], 0, 0, []);
+}
+
+/// <summary>
 /// Page visits that reached one tag, through the visited page or an item it links to. A visit counts once per tag.
 /// </summary>
 internal sealed record ContactStatsTagRow(int TagId, string Title, string Taxonomy, int Visits, int Pages);
@@ -235,6 +248,9 @@ internal sealed record ContactStatsInterestRow(int ClassId, string DisplayName, 
 
 /// <summary>Cached data with its read time.</summary>
 internal sealed record ContactStatsSnapshot(ContactStatsData Data, DateTimeOffset ReadAt);
+
+/// <summary>Cached tag data with its read time.</summary>
+internal sealed record ContactStatsTagSnapshot(ContactStatsTagData Data, DateTimeOffset ReadAt);
 
 /// <summary>Cached heatmap counts with their read time.</summary>
 internal sealed record ContactHeatmapSnapshot(IReadOnlyList<ContactHeatmapCell> Cells, DateTimeOffset ReadAt);

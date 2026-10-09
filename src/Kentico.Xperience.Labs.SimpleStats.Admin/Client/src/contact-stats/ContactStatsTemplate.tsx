@@ -185,7 +185,10 @@ export const ContactStatsTemplate = (props: ContactStatsTemplateProps) => {
   const apply = (next: ContactStatsFilter, refresh = false) => {
     setFilter(next);
     void load(next, { refresh });
-    if (heatmapRequested) {
+    // The heatmap ignores the taxonomy, so a taxonomy-only change keeps it.
+    const taxonomyOnly =
+      next.range === filter.range && next.allTime === filter.allTime && next.activityTypes === filter.activityTypes;
+    if (heatmapRequested && (refresh || !taxonomyOnly)) {
       void heatmapCommand.load(next, { refresh });
     }
   };

@@ -56,7 +56,7 @@ internal static class ContactStatsSql
     /// <summary>
     /// Main batch. Activities of the contact from the previous period start to the range end are copied once into <c>@Acts</c>
     /// (one contact, so few rows). Result sets, in order: totals, daily counts by type, pages, forms, emails, sources,
-    /// source and content pairs, content types, taxonomy options, tags (see <see cref="TagsQuery"/>).
+    /// source and content pairs, content types. Does not depend on the taxonomy filter: the tags are <see cref="TagsQuery"/>.
     /// </summary>
     public const string Batch = $$"""
         SET NOCOUNT ON;
@@ -208,30 +208,36 @@ internal static class ContactStatsSql
         WHERE X.[IsCurrent] = 1 AND X.[Type] = @PageVisitType
         GROUP BY CC.[ClassID], CC.[ClassDisplayName]
         ORDER BY COUNT(*) DESC, CC.[ClassDisplayName];
-
-        {{TagsQuery}}
         """;
 
     /// <summary>
-    /// Tag interests, part of <see cref="Batch"/> (uses <c>@Acts</c>). Tags reached by each page visit in the range: tags of the visited page,
-    /// plus tags of the items its published version links to (<c>CMS_ContentItemReference</c>, one level deep). The published version
+    /// Tag interests, own batch so a taxonomy change does not read the rest again. Tags reached by each page visit of the contact in the
+    /// range (and type filter), copied once into <c>@Visits</c>: tags of the visited page, plus tags of the items its published version links to (<c>CMS_ContentItemReference</c>, one level deep). The published version
     /// (<see cref="PublishedStatusParameter"/>) is the page's common data row in the visit's language, so links that exist only in a draft do
     /// not count. Tags are read from the item's language variant in the visit's language, else from its variant with the lowest metadata ID.
     /// A visit counts once per tag, however many paths reach it. Result sets: taxonomy options (all taxonomies, plus the selected one),
     /// then top tags of the taxonomy filter (<c>@TaxonomyID</c>, 0 = all) with the number of all such tags and of visits with any of them.
     /// </summary>
-    public const string TagsQuery = """
+    public const string TagsQuery = $$"""
+        SET NOCOUNT ON;
+        DECLARE @Visits TABLE ([ActivityID] int NOT NULL PRIMARY KEY, [PageGUID] uniqueidentifier NOT NULL, [LanguageID] int NOT NULL);
         DECLARE @VisitTags TABLE ([ActivityID] int NOT NULL, [PageGUID] uniqueidentifier NOT NULL, [TagID] int NOT NULL, [TaxonomyID] int NOT NULL,
             PRIMARY KEY ([ActivityID], [TagID]));
 
-        WITH [Visits] AS (
-            SELECT X.[ActivityID], X.[PageGUID], X.[LanguageID]
-            FROM @Acts X
-            WHERE X.[IsCurrent] = 1 AND X.[Type] = @PageVisitType AND X.[PageGUID] IS NOT NULL AND X.[LanguageID] IS NOT NULL
-        ),
-        [PageItems] AS (
+        INSERT INTO @Visits ([ActivityID], [PageGUID], [LanguageID])
+        SELECT A.[ActivityID], A.[ActivityWebPageItemGUID], A.[ActivityLanguageID]
+        FROM [OM_Activity] A
+        WHERE A.[ActivityContactID] = @ContactID
+            AND A.[ActivityType] = @PageVisitType
+            AND A.[ActivityCreated] >= @From
+            AND A.[ActivityCreated] < @ToExclusive
+            AND A.[ActivityWebPageItemGUID] IS NOT NULL
+            AND A.[ActivityLanguageID] IS NOT NULL
+            AND {{TypeCondition}};
+
+        WITH [PageItems] AS (
             SELECT DISTINCT V.[PageGUID], V.[LanguageID], P.[WebPageItemContentItemID] AS [ContentItemID]
-            FROM [Visits] V
+            FROM @Visits V
             INNER JOIN [CMS_WebPageItem] P ON P.[WebPageItemGUID] = V.[PageGUID]
         ),
         [Reached] AS (
@@ -260,10 +266,10 @@ internal static class ContactStatsSql
         )
         INSERT INTO @VisitTags ([ActivityID], [PageGUID], [TagID], [TaxonomyID])
         SELECT V.[ActivityID], V.[PageGUID], RT.[TagID], RT.[TagTaxonomyID]
-        FROM [Visits] V
+        FROM @Visits V
         INNER JOIN [ReachedTags] RT ON RT.[PageGUID] = V.[PageGUID] AND RT.[LanguageID] = V.[LanguageID];
 
-        -- 9. Taxonomies with reached tags, plus the selected one.
+        -- 1. Taxonomies with reached tags, plus the selected one.
         SELECT X.[TaxonomyID], X.[TaxonomyTitle], COUNT(DISTINCT VT.[TagID]) AS [Tags]
         FROM [CMS_Taxonomy] X
         LEFT JOIN @VisitTags VT ON VT.[TaxonomyID] = X.[TaxonomyID]
@@ -271,7 +277,7 @@ internal static class ContactStatsSql
         GROUP BY X.[TaxonomyID], X.[TaxonomyTitle]
         ORDER BY X.[TaxonomyTitle], X.[TaxonomyID];
 
-        -- 10. Top tags of the taxonomy filter.
+        -- 2. Top tags of the taxonomy filter.
         WITH [Filtered] AS (
             SELECT VT.[ActivityID], VT.[PageGUID], VT.[TagID]
             FROM @VisitTags VT

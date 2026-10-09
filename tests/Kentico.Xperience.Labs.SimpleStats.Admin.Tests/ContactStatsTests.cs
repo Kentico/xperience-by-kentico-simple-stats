@@ -180,7 +180,11 @@ public class ContactStatsTests
 
         Assert.That(await service.ContactExists(ContactId, CancellationToken.None), Is.False);
         await service.GetReport(ContactId, null, today, refresh: false, CancellationToken.None);
-        Assert.That(repository.DataCalls, Is.Zero);
+        Assert.Multiple(() =>
+        {
+            Assert.That(repository.DataCalls, Is.Zero);
+            Assert.That(repository.TagCalls, Is.Zero);
+        });
     }
 
     [Test]
@@ -320,7 +324,7 @@ public class ContactStatsTests
     }
 
     [Test]
-    public async Task GetReport_Taxonomy_PassedToRepositoryAndPartOfCacheKey()
+    public async Task GetReport_Taxonomy_PassedToTagQueryAndPartOfItsCacheKey()
     {
         await service.GetReport(ContactId, new ContactStatsFilter { TaxonomyId = 3 }, today, refresh: false, CancellationToken.None);
         Assert.That(repository.LastTaxonomyId, Is.EqualTo(3));
@@ -330,10 +334,58 @@ public class ContactStatsTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(repository.DataCalls, Is.EqualTo(2));
+            Assert.That(repository.TagCalls, Is.EqualTo(2));
             // 0 or less means all taxonomies.
             Assert.That(repository.LastTaxonomyId, Is.Null);
         });
+    }
+
+    [Test]
+    public async Task GetReport_TaxonomyChange_ReadsOnlyTags_RestFromCache()
+    {
+        repository.Data = ContactStatsData.Empty with { Totals = ContactStatsTotalsRow.Empty with { Activities = 5, PageVisits = 4 } };
+        repository.Tags = new([new(10, "Espresso", "Coffee tastes", 4, 2)], 1, 4, [new(3, "Coffee tastes", 1)]);
+
+        var all = await service.GetReport(ContactId, null, today, refresh: false, CancellationToken.None);
+        clock.Now = clock.Now.AddMinutes(1);
+        var filtered = await service.GetReport(ContactId, new ContactStatsFilter { TaxonomyId = 3 }, today, refresh: false, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(repository.DataCalls, Is.EqualTo(1));
+            Assert.That(repository.TagCalls, Is.EqualTo(2));
+            Assert.That(repository.LastTaxonomyId, Is.EqualTo(3));
+            // Merged: the rest from the cached main data, the tags from the new tag read.
+            Assert.That(filtered.Totals.Activities, Is.EqualTo(5));
+            Assert.That(filtered.TaxonomyId, Is.EqualTo(3));
+            Assert.That(filtered.InterestTags.Items.Single().Label, Is.EqualTo("Espresso"));
+            Assert.That(filtered.TaxonomyOptions.Single().Id, Is.EqualTo(3));
+            Assert.That(filtered.Series.UpdatedAt, Is.EqualTo(all.Series.UpdatedAt));
+            Assert.That(filtered.InterestTags.UpdatedAt, Is.EqualTo(clock.Now));
+            Assert.That(filtered.UpdatedAt, Is.EqualTo(all.UpdatedAt));
+        });
+    }
+
+    [Test]
+    public async Task GetReport_Refresh_ReadsMainDataAndTags()
+    {
+        await service.GetReport(ContactId, new ContactStatsFilter { TaxonomyId = 3 }, today, refresh: false, CancellationToken.None);
+        await service.GetReport(ContactId, new ContactStatsFilter { TaxonomyId = 3 }, today, refresh: true, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(repository.DataCalls, Is.EqualTo(2));
+            Assert.That(repository.TagCalls, Is.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public async Task GetHeatmap_IgnoresTaxonomy()
+    {
+        await service.GetHeatmap(ContactId, new ContactStatsFilter { TaxonomyId = 3 }, today, refresh: false, CancellationToken.None);
+        await service.GetHeatmap(ContactId, new ContactStatsFilter(), today, refresh: false, CancellationToken.None);
+
+        Assert.That(repository.HeatmapCalls, Is.EqualTo(1));
     }
 
     [Test]
@@ -349,6 +401,7 @@ public class ContactStatsTests
         {
             Assert.That(unknown.TaxonomyId, Is.Null);
             Assert.That(repository.DataCalls, Is.EqualTo(1));
+            Assert.That(repository.TagCalls, Is.EqualTo(1));
             Assert.That(repository.LastTaxonomyId, Is.Null);
             // Only the site-wide taxonomy list is added, once.
             Assert.That(cache.Count, Is.EqualTo(entries + 1));
@@ -429,10 +482,10 @@ public class ContactStatsTests
         // Taxonomy filter (0 = all) on the tags only; options keep all taxonomies plus the selected one.
         Assert.That(sql, Does.Contain("@TaxonomyID = 0 OR VT.[TaxonomyID] = @TaxonomyID"));
         Assert.That(sql, Does.Contain("OR X.[TaxonomyID] = @TaxonomyID"));
-        // Only page visits in the range (and so the activity type filter) contribute.
-        Assert.That(sql, Does.Contain("X.[IsCurrent] = 1 AND X.[Type] = @PageVisitType"));
-        string batch = ContactStatsSql.Batch;
-        Assert.That(batch, Does.Contain(sql));
+        // Only page visits in the range (and the activity type filter) contribute; the main batch has no tags.
+        Assert.That(sql, Does.Contain("A.[ActivityType] = @PageVisitType"));
+        Assert.That(sql, Does.Contain("A.[ActivityCreated] >= @From"));
+        Assert.That(ContactStatsSql.Batch, Does.Not.Contain("@TaxonomyID"));
     });
 
     [Test]
@@ -468,7 +521,7 @@ public class ContactStatsTests
     [Test]
     public void Sql_FiltersContactAndTypes_NoChannelFilter() => Assert.Multiple(() =>
     {
-        foreach (string sql in new[] { ContactStatsSql.Batch, ContactStatsSql.HeatmapQuery })
+        foreach (string sql in new[] { ContactStatsSql.Batch, ContactStatsSql.TagsQuery, ContactStatsSql.HeatmapQuery })
         {
             Assert.That(sql, Does.Contain("A.[ActivityContactID] = @ContactID"));
             Assert.That(sql, Does.Contain(ContactStatsSql.TypeCondition));
@@ -618,15 +671,25 @@ public class ContactStatsTests
             return Task.FromResult(Info);
         }
 
+        public ContactStatsTagData Tags { get; set; } = ContactStatsTagData.Empty;
+
+        public int TagCalls { get; private set; }
+
         public int? LastTaxonomyId { get; private set; }
 
-        public Task<ContactStatsData> GetData(int contactId, DateOnly previousFrom, DateOnly from, DateOnly to, IReadOnlyList<string> activityTypes, int? taxonomyId, CancellationToken cancellationToken)
+        public Task<ContactStatsData> GetData(int contactId, DateOnly previousFrom, DateOnly from, DateOnly to, IReadOnlyList<string> activityTypes, CancellationToken cancellationToken)
         {
             DataCalls++;
-            LastTaxonomyId = taxonomyId;
             LastCall = (contactId, previousFrom, from, to);
             LastTypes = activityTypes;
             return Task.FromResult(Data);
+        }
+
+        public Task<ContactStatsTagData> GetTags(int contactId, DateOnly from, DateOnly to, IReadOnlyList<string> activityTypes, int? taxonomyId, CancellationToken cancellationToken)
+        {
+            TagCalls++;
+            LastTaxonomyId = taxonomyId;
+            return Task.FromResult(Tags);
         }
 
         public Task<IReadOnlyList<ContactHeatmapCell>> GetHeatmap(int contactId, DateOnly from, DateOnly to, IReadOnlyList<string> activityTypes, CancellationToken cancellationToken)

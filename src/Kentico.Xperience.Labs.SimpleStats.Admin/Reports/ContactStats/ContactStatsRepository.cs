@@ -21,9 +21,14 @@ internal interface IContactStatsRepository
     public Task<ContactStatsInfo> GetInfo(int contactId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Returns the data of the main batch for the range (and the previous period from <paramref name="previousFrom"/>) and types.
+    /// Returns the data of the main batch for the range (and the previous period from <paramref name="previousFrom"/>) and types, without the tags.
     /// </summary>
-    public Task<ContactStatsData> GetData(int contactId, DateOnly previousFrom, DateOnly from, DateOnly to, IReadOnlyList<string> activityTypes, int? taxonomyId, CancellationToken cancellationToken);
+    public Task<ContactStatsData> GetData(int contactId, DateOnly previousFrom, DateOnly from, DateOnly to, IReadOnlyList<string> activityTypes, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns the tag interests of the page visits in the range for the types: taxonomy options and top tags of the taxonomy (<c>null</c>: all).
+    /// </summary>
+    public Task<ContactStatsTagData> GetTags(int contactId, DateOnly from, DateOnly to, IReadOnlyList<string> activityTypes, int? taxonomyId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns activity counts by weekday and hour in the range for the types. Only non-zero cells.
@@ -63,7 +68,7 @@ internal sealed class ContactStatsRepository : IContactStatsRepository
         return new(true, created, types);
     }
 
-    public async Task<ContactStatsData> GetData(int contactId, DateOnly previousFrom, DateOnly from, DateOnly to, IReadOnlyList<string> activityTypes, int? taxonomyId, CancellationToken cancellationToken)
+    public async Task<ContactStatsData> GetData(int contactId, DateOnly previousFrom, DateOnly from, DateOnly to, IReadOnlyList<string> activityTypes, CancellationToken cancellationToken)
     {
         var parameters = CreateParameters(contactId, from, to, activityTypes);
         parameters.Add(new DataParameter(ContactStatsSql.PreviousFromParameter, previousFrom.ToDateTime(TimeOnly.MinValue)));
@@ -76,9 +81,6 @@ internal sealed class ContactStatsRepository : IContactStatsRepository
         parameters.Add(new DataParameter("@EmailLimit", ContactStatsReportBuilder.ItemLimit));
         parameters.Add(new DataParameter("@SourceLimit", ContactStatsReportBuilder.SourceLimit));
         parameters.Add(new DataParameter("@InterestLimit", ContactStatsReportBuilder.InterestLimit));
-        parameters.Add(new DataParameter("@TagLimit", ContactStatsReportBuilder.InterestLimit));
-        parameters.Add(new DataParameter(ContactStatsSql.TaxonomyParameter, taxonomyId ?? 0));
-        parameters.Add(new DataParameter(ContactStatsSql.PublishedStatusParameter, (int)VersionStatus.Published));
 
         await using var reader = await ConnectionHelper.ExecuteReaderAsync(ContactStatsSql.Batch, parameters, QueryTypeEnum.SQLQuery, CommandBehavior.Default, cancellationToken);
 
@@ -151,15 +153,27 @@ internal sealed class ContactStatsRepository : IContactStatsRepository
             interestVisits = Int(reader, "MatchedVisits");
         }
 
-        // 9. Taxonomy options (the INSERT into @VisitTags returns no result set).
-        await StatsSql.NextResult(reader, ReportName, cancellationToken);
+        return new(totals, daily, pages, pageCount, forms, formCount, emails, emailCount, sources, sourceCount, contents, contentCount, interests, interestCount, interestVisits);
+    }
+
+    public async Task<ContactStatsTagData> GetTags(int contactId, DateOnly from, DateOnly to, IReadOnlyList<string> activityTypes, int? taxonomyId, CancellationToken cancellationToken)
+    {
+        var parameters = CreateParameters(contactId, from, to, activityTypes);
+        parameters.Add(new DataParameter("@PageVisitType", PredefinedActivityType.PAGE_VISIT));
+        parameters.Add(new DataParameter("@TagLimit", ContactStatsReportBuilder.InterestLimit));
+        parameters.Add(new DataParameter(ContactStatsSql.TaxonomyParameter, taxonomyId ?? 0));
+        parameters.Add(new DataParameter(ContactStatsSql.PublishedStatusParameter, (int)VersionStatus.Published));
+
+        await using var reader = await ConnectionHelper.ExecuteReaderAsync(ContactStatsSql.TagsQuery, parameters, QueryTypeEnum.SQLQuery, CommandBehavior.Default, cancellationToken);
+
+        // 1. Taxonomy options (the INSERTs return no result set).
         var taxonomies = new List<TagUsageTaxonomyOption>();
         while (await reader.ReadAsync(cancellationToken))
         {
             taxonomies.Add(new(Int(reader, "TaxonomyID"), Text(reader, "TaxonomyTitle") ?? string.Empty, Int(reader, "Tags")));
         }
 
-        // 10. Tags.
+        // 2. Tags.
         await StatsSql.NextResult(reader, ReportName, cancellationToken);
         var tags = new List<ContactStatsTagRow>();
         int tagCount = 0;
@@ -171,13 +185,7 @@ internal sealed class ContactStatsRepository : IContactStatsRepository
             tagVisits = Int(reader, "TagVisits");
         }
 
-        return new(totals, daily, pages, pageCount, forms, formCount, emails, emailCount, sources, sourceCount, contents, contentCount, interests, interestCount, interestVisits)
-        {
-            Tags = tags,
-            TagCount = tagCount,
-            TagVisits = tagVisits,
-            TaxonomyOptions = taxonomies,
-        };
+        return new(tags, tagCount, tagVisits, taxonomies);
     }
 
     public async Task<IReadOnlyList<ContactHeatmapCell>> GetHeatmap(int contactId, DateOnly from, DateOnly to, IReadOnlyList<string> activityTypes, CancellationToken cancellationToken)

@@ -32,7 +32,7 @@ public interface IContactStatsService
     public Task<ContactStatsResult> GetReport(int contactId, ContactStatsFilter? filter, DateOnly today, bool refresh, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Returns the weekday × hour heatmap of the contact for the filter (same range and types as <see cref="GetReport"/>). Own query and cache item.
+    /// Returns the weekday × hour heatmap of the contact for the filter (same range and types as <see cref="GetReport"/>; the taxonomy is ignored). Own query and cache item.
     /// </summary>
     public Task<ContactHeatmapResult> GetHeatmap(int contactId, ContactStatsFilter? filter, DateOnly today, bool refresh, CancellationToken cancellationToken);
 }
@@ -74,26 +74,50 @@ internal sealed class ContactStatsService(
         // All time has no previous period: the batch then reads the range only.
         var previousFrom = query.AllTime ? range.From : StatsComparison.GetPreviousRange(range).From;
 
-        // Grouping is not part of the key: the daily aggregate is cached.
-        var settings = StatsCache.CreateSettings(
-            "contact-stats",
-            contactId,
-            previousFrom.DayNumber,
-            range.From.DayNumber,
-            range.To.DayNumber,
-            TypesKey(query.ActivityTypes),
-            query.TaxonomyId ?? 0);
-
+        // Grouping is not part of the key: the daily aggregate is cached. Neither is the taxonomy: only the tags depend on it,
+        // so they are their own batch and cache item, and a taxonomy change reads only them. Refresh reloads both.
         var snapshot = await cache.LoadAsync(
             cacheInvalidator,
-            settings,
+            StatsCache.CreateSettings(
+                "contact-stats",
+                contactId,
+                previousFrom.DayNumber,
+                range.From.DayNumber,
+                range.To.DayNumber,
+                TypesKey(query.ActivityTypes)),
             refresh,
             async token => new ContactStatsSnapshot(
                 info.Exists
-                    ? await repository.GetData(contactId, previousFrom, range.From, range.To, query.ActivityTypes, query.TaxonomyId, token)
+                    ? await repository.GetData(contactId, previousFrom, range.From, range.To, query.ActivityTypes, token)
                     : ContactStatsData.Empty,
                 clock.GetUtcNow()),
             cancellationToken);
+
+        var tagSnapshot = await cache.LoadAsync(
+            cacheInvalidator,
+            StatsCache.CreateSettings(
+                "contact-stats-tags",
+                contactId,
+                range.From.DayNumber,
+                range.To.DayNumber,
+                TypesKey(query.ActivityTypes),
+                query.TaxonomyId ?? 0),
+            refresh,
+            async token => new ContactStatsTagSnapshot(
+                info.Exists
+                    ? await repository.GetTags(contactId, range.From, range.To, query.ActivityTypes, query.TaxonomyId, token)
+                    : ContactStatsTagData.Empty,
+                clock.GetUtcNow()),
+            cancellationToken);
+
+        var tags = tagSnapshot.Data;
+        var data = snapshot.Data with
+        {
+            Tags = tags.Tags,
+            TagCount = tags.TagCount,
+            TagVisits = tags.TagVisits,
+            TaxonomyOptions = tags.TaxonomyOptions,
+        };
 
         var displayNames = await cache.LoadAsync(
             cacheInvalidator,
@@ -109,7 +133,7 @@ internal sealed class ContactStatsService(
             contactId,
             query,
             info,
-            snapshot.Data,
+            data,
             displayNames,
             hasAnyUtmData,
             today,
@@ -126,10 +150,11 @@ internal sealed class ContactStatsService(
             Emails = result.Emails with { UpdatedAt = snapshot.ReadAt },
             Campaigns = result.Campaigns with { UpdatedAt = snapshot.ReadAt },
             Interests = result.Interests with { UpdatedAt = snapshot.ReadAt },
-            InterestTags = result.InterestTags with { UpdatedAt = snapshot.ReadAt },
+            InterestTags = result.InterestTags with { UpdatedAt = tagSnapshot.ReadAt },
             ActivitiesPath = adminLinks.GetPath<ContactActivityList>(contactParameters),
             PagePath = adminLinks.GetPath<UIPages.ContactStatsPage>(contactParameters),
-            UpdatedAt = snapshot.ReadAt,
+            // The older of the two reads.
+            UpdatedAt = snapshot.ReadAt < tagSnapshot.ReadAt ? snapshot.ReadAt : tagSnapshot.ReadAt,
         };
     }
 
