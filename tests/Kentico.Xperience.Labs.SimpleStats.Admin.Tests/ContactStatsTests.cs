@@ -524,6 +524,30 @@ public class ContactStatsTests
         }
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task Page_ValidatePage_ChecksPermissionBeforeContact(bool granted)
+    {
+        var evaluator = new FakePermissionEvaluator(granted ? [StatsPermissions.CONTACT_STATS] : []);
+        var page = new ContactStatsPage(service, evaluator, new FakePublisher(), clock) { ContactId = ContactId };
+
+        if (granted)
+        {
+            var result = await page.ValidatePage();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.IsValid, Is.True);
+                Assert.That(repository.InfoCalls, Is.EqualTo(1));
+            });
+        }
+        else
+        {
+            Assert.ThrowsAsync<ForbiddenAccessException>(() => page.ValidatePage());
+            Assert.That(repository.InfoCalls, Is.Zero);
+        }
+    }
+
     // Activity times are server local time, as stored.
     private static DateTime At(int year, int month, int day, int hour = 0, int minute = 0) =>
         new(year, month, day, hour, minute, 0, DateTimeKind.Unspecified);
@@ -565,7 +589,13 @@ public class ContactStatsTests
 
         public IReadOnlyList<string>? LastTypes { get; private set; }
 
-        public Task<ContactStatsInfo> GetInfo(int contactId, CancellationToken cancellationToken) => Task.FromResult(Info);
+        public int InfoCalls { get; private set; }
+
+        public Task<ContactStatsInfo> GetInfo(int contactId, CancellationToken cancellationToken)
+        {
+            InfoCalls++;
+            return Task.FromResult(Info);
+        }
 
         public int? LastTaxonomyId { get; private set; }
 

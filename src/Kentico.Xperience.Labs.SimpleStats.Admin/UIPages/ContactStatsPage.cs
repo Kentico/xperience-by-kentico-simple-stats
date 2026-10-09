@@ -53,12 +53,17 @@ internal sealed class ContactStatsPage(
     [PageParameter(typeof(IntPageModelBinder), typeof(ContactEditSection))]
     public int ContactId { get; set; }
 
-    public override async Task<PageValidationResult> ValidatePage() =>
-        new()
+    public override async Task<PageValidationResult> ValidatePage()
+    {
+        // Before the contact lookup, so users without the permission can't probe contact IDs or fill the cache.
+        await statsPermissionEvaluator.EnsureGranted(StatsPermissions.CONTACT_STATS);
+
+        return new()
         {
             IsValid = await contactStatsService.ContactExists(ContactId, CancellationToken.None),
             ErrorMessageKey = "base.forms.error.objectnotinitialized",
         };
+    }
 
     public override async Task<ContactStatsClientProperties> ConfigureTemplateProperties(ContactStatsClientProperties properties)
     {

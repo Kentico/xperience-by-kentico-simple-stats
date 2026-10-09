@@ -72,12 +72,17 @@ internal sealed class WebPageStatsPage(
     public WebPageUrlIdentifier WebPageIdentifier { get; set; } = new(string.Empty, 0);
 
     // The synthetic channel root has no web page item, so it shows the "object doesn't exist" screen (the tab is also hidden there).
-    public override async Task<PageValidationResult> ValidatePage() =>
-        new()
+    public override async Task<PageValidationResult> ValidatePage()
+    {
+        // Before the page lookup, so users without the permission can't probe page IDs.
+        await statsPermissionEvaluator.EnsureGranted(StatsPermissions.WEB_PAGE_STATS);
+
+        return new()
         {
             IsValid = await GetTarget() is not null,
             ErrorMessageKey = "base.forms.error.objectnotinitialized",
         };
+    }
 
     public override async Task<WebPageStatsClientProperties> ConfigureTemplateProperties(WebPageStatsClientProperties properties)
     {
