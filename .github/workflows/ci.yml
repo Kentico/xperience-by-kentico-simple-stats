@@ -41,6 +41,24 @@ jobs:
       DOTNET_CLI_TELEMETRY_OPTOUT: 1
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
       DOTNET_NOLOGO: 1
+      # Throwaway SQL Server of this job (service container below); not a secret.
+      SQL_SA_PASSWORD: Ci-Integration-Tests-1
+      # Integration tests (tests/Kentico.Xperience.Labs.SimpleStats.Admin.IntegrationTests) run against this empty Xperience database.
+      SIMPLESTATS_INTEGRATION_SQL: Data Source=localhost,1433;Initial Catalog=simple-stats-integration-tests;User ID=sa;Password=Ci-Integration-Tests-1;Encrypt=False
+
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: Ci-Integration-Tests-1
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Ci-Integration-Tests-1 -C -Q 'SELECT 1' -b"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - uses: actions/checkout@v7
@@ -71,6 +89,18 @@ jobs:
       - name: Type-check Admin client
         working-directory: src/Kentico.Xperience.Labs.SimpleStats.Admin/Client
         run: npm run typecheck
+
+      - name: Create integration test database
+        run: |
+          dotnet tool restore
+          # From the repository root (no Data/Template.zip), so the database has the Xperience schema and no sample data.
+          dotnet kentico-xperience-dbmanager -- `
+            --server-name "localhost,1433" `
+            --username sa `
+            --password $env:SQL_SA_PASSWORD `
+            --admin-password $env:SQL_SA_PASSWORD `
+            --database-name simple-stats-integration-tests `
+            --recreate-existing-database
 
       - name: Test Solution
         run: |

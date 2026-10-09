@@ -46,6 +46,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Kentico.Xperience.Labs.SimpleStats.Admin.Tests" />
+    <InternalsVisibleTo Include="Kentico.Xperience.Labs.SimpleStats.Admin.IntegrationTests" />
   </ItemGroup>
 
   <ItemGroup>
