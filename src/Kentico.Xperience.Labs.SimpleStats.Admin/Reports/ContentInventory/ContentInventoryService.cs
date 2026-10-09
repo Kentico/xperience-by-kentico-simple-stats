@@ -66,14 +66,8 @@ internal sealed class ContentInventoryService(
         };
     }
 
-    /// <summary>
-    /// Path of the "General" tab of the content type in the Content types application.
-    /// </summary>
-    private string? GetContentTypePath(int classId) =>
-        adminLinks.GetPath<ContentTypeGeneral>(new PageParameterValues
-        {
-            { typeof(ContentTypeEditSection), classId },
-        });
+    /// <inheritdoc cref="StatsContentItemPaths.GetContentTypePath"/>
+    private string? GetContentTypePath(int classId) => StatsContentItemPaths.GetContentTypePath(adminLinks, classId);
 
     /// <summary>
     /// Path of the "Steps" tab of the workflow in the Workflows application.
@@ -84,29 +78,6 @@ internal sealed class ContentInventoryService(
             { typeof(WorkflowEditSection), workflowId },
         });
 
-    /// <summary>
-    /// Path of the item where it is edited: reusable items in the Content hub (with <see cref="IStatsAdminLinks"/>),
-    /// pages, emails and headless items in their channel application (see <see cref="StatsChannelItemPaths"/>).
-    /// </summary>
-    private string? GetContentItemPath(ContentItemLink link) =>
-        link.Location switch
-        {
-            ContentItemLocation.ContentHub => GetContentHubPath(link),
-            ContentItemLocation.WebPage => StatsChannelItemPaths.GetWebPagePath(link.ContainerId, link.LanguageName, link.ObjectId),
-            ContentItemLocation.Email => StatsChannelItemPaths.GetEmailPath(link.ContainerId, link.LanguageName, link.ObjectId),
-            ContentItemLocation.Headless => StatsChannelItemPaths.GetHeadlessItemPath(link.ContainerId, link.LanguageName, link.ObjectId),
-            _ => null,
-        };
-
-    /// <summary>
-    /// Path of the "Content" tab of a reusable item in the Content hub (all items of its workspace, the given language).
-    /// </summary>
-    private string? GetContentHubPath(ContentItemLink link) =>
-        adminLinks.GetPath<ContentItemEdit>(new PageParameterValues
-        {
-            { typeof(ContentHubWorkspace), link.ContainerId },
-            { typeof(ContentHubContentLanguage), link.LanguageName },
-            { typeof(ContentHubFolder), ContentHubSlugs.ALL_CONTENT_ITEMS },
-            { typeof(ContentItemEditSection), link.ObjectId },
-        });
+    /// <inheritdoc cref="StatsContentItemPaths.GetPath"/>
+    private string? GetContentItemPath(ContentItemLink link) => StatsContentItemPaths.GetPath(adminLinks, link);
 }

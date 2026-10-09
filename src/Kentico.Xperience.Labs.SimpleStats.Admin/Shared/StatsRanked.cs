@@ -78,6 +78,13 @@ public sealed record StatsRankedItem(
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? TertiaryValueText { get; init; }
+
+    /// <summary>
+    /// Optional meaning of the item for chart colors (for example an order status that is a problem).
+    /// <c>null</c> (left out of the JSON) for lists without it, so they send the same data as before.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public StatsTone? Tone { get; init; }
 }
 
 /// <summary>
@@ -150,6 +157,9 @@ public sealed record StatsRankedEntry(
 
     /// <inheritdoc cref="StatsRankedItem.TertiaryValue"/>
     public decimal? TertiaryValue { get; init; }
+
+    /// <inheritdoc cref="StatsRankedItem.Tone"/>
+    public StatsTone? Tone { get; init; }
 }
 
 /// <summary>
@@ -260,6 +270,7 @@ public static class StatsRankedBuilder
                 AdminPath = e.AdminPath,
                 PreviousValue = e.PreviousValue,
                 TertiaryValue = e.TertiaryValue,
+                Tone = e.Tone,
                 Change = e.PreviousValue is decimal previous ? StatsComparison.GetChange(e.Value, previous) : null,
             })
             .ToList();

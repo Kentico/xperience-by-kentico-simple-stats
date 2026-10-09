@@ -118,7 +118,12 @@ public sealed record OrdersRevenueDailyRow(DateOnly Date, int Orders, decimal Re
 /// <summary>
 /// Orders and revenue of one status in the range.
 /// </summary>
-public sealed record OrdersRevenueStatusRow(int StatusId, string DisplayName, int Orders, decimal Revenue);
+/// <param name="StatusId">Status ID.</param>
+/// <param name="CodeName">Status code name (<c>OrderStatusName</c>).</param>
+/// <param name="DisplayName">Status display name.</param>
+/// <param name="Orders">Orders in the status.</param>
+/// <param name="Revenue">Revenue of the orders.</param>
+public sealed record OrdersRevenueStatusRow(int StatusId, string CodeName, string DisplayName, int Orders, decimal Revenue);
 
 /// <summary>
 /// One product (grouped by SKU, or by item name when there is no SKU) in the range and in the previous period.

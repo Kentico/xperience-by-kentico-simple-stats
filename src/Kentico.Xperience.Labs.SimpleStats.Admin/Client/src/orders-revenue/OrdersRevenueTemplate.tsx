@@ -1,4 +1,4 @@
-import { ButtonColor, LinkButton } from '@kentico/xperience-admin-components';
+import { ButtonColor, Colors, LinkButton } from '@kentico/xperience-admin-components';
 import React, { useMemo, useState } from 'react';
 
 import { toAdminHref } from '../shared/adminLinks';
@@ -30,6 +30,7 @@ import {
   StatsRankedCaptions,
   StatsRankedResult,
   StatsShareSlice,
+  StatsTone,
   StatsValueComparison,
   StatsValueSeries,
 } from '../shared/types';
@@ -37,6 +38,15 @@ import { useCsvExport } from '../shared/useCsvExport';
 import { useStatsCommand } from '../shared/useStatsCommand';
 import '../shared/stats.css';
 
+/**
+ * Traffic-light slice colors of the status tones the server guesses from the status names.
+ * Neutral statuses take palette colors.
+ */
+const toneColors: Partial<Record<StatsTone, Colors>> = {
+  Problem: Colors.AlertBackgroundHighEmphasis,
+  Caution: Colors.WarningBackgroundHighEmphasis,
+  Done: Colors.SuccessBackgroundHighEmphasis,
+};
 
 /** Mirrors `OrdersRevenueTotals`. */
 interface OrdersRevenueTotals {
@@ -136,6 +146,7 @@ export const OrdersRevenueTemplate = (props: OrdersRevenueTemplateProps) => {
         value: item.value,
         secondaryValue: item.secondaryValue,
         secondaryValueText: item.secondaryValueText ?? null,
+        color: item.tone ? toneColors[item.tone] : undefined,
       })),
     [byStatus.items],
   );

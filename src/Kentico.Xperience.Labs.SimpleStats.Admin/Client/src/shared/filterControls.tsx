@@ -1,6 +1,8 @@
 import {
   Button,
   ButtonColor,
+  DropDownPlacement,
+  DropDownSelectMenu,
   MenuItem,
   NameToggleButton,
   NameToggleButtons,
@@ -91,6 +93,123 @@ export const IdSelect = ({ label, allLabel, options, value, onChange }: IdSelect
           />
         ))}
       </Select>
+    </div>
+  );
+};
+
+/** Option of a `TextSelect`. */
+export interface TextSelectOption {
+  /** Any text, also empty. */
+  readonly value: string;
+  readonly label: string;
+}
+
+export interface TextSelectProps {
+  /** Label above the select, for example "Source". */
+  readonly label: string;
+  /** Label of the option that clears the value, for example "All sources". */
+  readonly allLabel: string;
+  readonly options: readonly TextSelectOption[];
+  /** Selected value, `null` for all. */
+  readonly value: string | null;
+  readonly onChange: (value: string | null) => void;
+}
+
+/** Prefix of option values, so any text (also an empty string) is told apart from the "all" option. */
+const textOptionPrefix = 'v:';
+
+/**
+ * Filter bar item with a select of text options plus an "all" option (for example UTM sources from project data).
+ * Like `IdSelect`, for values that are free text instead of IDs.
+ */
+export const TextSelect = ({ label, allLabel, options, value, onChange }: TextSelectProps) => {
+  const handleChange = (selected?: string) => {
+    onChange(selected?.startsWith(textOptionPrefix) ? selected.slice(textOptionPrefix.length) : null);
+  };
+
+  return (
+    <div className="SimpleStats-filterItem SimpleStats-filterItem--channel">
+      <Select label={label} value={value === null ? allIdValue : textOptionPrefix + value} onChange={handleChange}>
+        <MenuItem primaryLabel={allLabel} value={allIdValue} />
+        {options.map((option) => (
+          <MenuItem key={option.value} primaryLabel={option.label} value={textOptionPrefix + option.value} />
+        ))}
+      </Select>
+    </div>
+  );
+};
+
+/** Option of a `MultiSelect`. */
+export interface MultiSelectOption {
+  readonly value: string;
+  readonly label: string;
+  readonly secondaryLabel?: string;
+}
+
+export interface MultiSelectProps {
+  /** Label above the select, for example "Activity types". */
+  readonly label: string;
+  /** Text of the button when nothing is selected (which means all), for example "All types". */
+  readonly allLabel: string;
+  /** Plural noun for the button text with several values selected, for example "types" ("3 types"). */
+  readonly noun: string;
+  readonly options: readonly MultiSelectOption[];
+  /** Selected values. Empty means all. */
+  readonly value: readonly string[];
+  readonly onChange: (value: string[]) => void;
+}
+
+/**
+ * Filter bar item that selects several text values (empty = all), for example activity types.
+ * The admin components have no multi-select field, so this is a drop-down select menu with multi-select items.
+ * Each click applies the change.
+ */
+export const MultiSelect = ({ label, allLabel, noun, options, value, onChange }: MultiSelectProps) => {
+  const selected = new Set(value);
+  const buttonText =
+    value.length === 0
+      ? allLabel
+      : value.length === 1
+        ? options.find((o) => o.value === value[0])?.label ?? value[0]
+        : `${value.length} ${noun}`;
+
+  const toggle = (optionValue: string) => {
+    const next = selected.has(optionValue)
+      ? value.filter((v) => v !== optionValue)
+      : [...value, optionValue];
+    // Every option selected is the same as all.
+    onChange(next.length === options.length ? [] : next);
+  };
+
+  return (
+    <div className="SimpleStats-filterItem SimpleStats-filterItem--channel">
+      <span className="SimpleStats-label">{label}</span>
+      <DropDownSelectMenu
+        placement={DropDownPlacement.BottomStart}
+        maxContentHeight="320px"
+        renderTrigger={(ref, onTriggerClick) => (
+          <div ref={ref as React.RefObject<HTMLDivElement>}>
+            <Button
+              label={buttonText}
+              trailingIcon="xp-chevron-down"
+              color={ButtonColor.Secondary}
+              onClick={onTriggerClick}
+            />
+          </div>
+        )}
+      >
+        <MenuItem primaryLabel={allLabel} selected={value.length === 0} onClick={() => onChange([])} />
+        {options.map((option) => (
+          <MenuItem
+            key={option.value}
+            primaryLabel={option.label}
+            secondaryLabel={option.secondaryLabel}
+            isMultiSelect
+            selected={selected.has(option.value)}
+            onClick={() => toggle(option.value)}
+          />
+        ))}
+      </DropDownSelectMenu>
     </div>
   );
 };

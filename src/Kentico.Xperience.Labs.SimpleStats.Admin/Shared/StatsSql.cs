@@ -9,6 +9,29 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
 internal static class StatsSql
 {
     /// <summary>
+    /// Finds where the query string or fragment of activity alias <c>A</c>'s URL starts (<c>U.[Cut]</c>, 0 when none).
+    /// Use with <see cref="ActivityUrlWithoutQuery"/>.
+    /// </summary>
+    public const string ActivityUrlCutApply = "CROSS APPLY (SELECT PATINDEX(N'%[?#]%', A.[ActivityURL]) AS [Cut]) U";
+
+    /// <summary>
+    /// Activity alias <c>A</c>'s URL cut at the first <c>?</c> or <c>#</c>, so query strings (for example UTM tags) and fragments
+    /// count toward the same page. Other differences (host, trailing slash, case) are kept as stored. Needs <see cref="ActivityUrlCutApply"/>.
+    /// </summary>
+    public const string ActivityUrlWithoutQuery = "CASE WHEN U.[Cut] > 0 THEN LEFT(A.[ActivityURL], U.[Cut] - 1) ELSE A.[ActivityURL] END";
+
+    /// <summary>
+    /// Returns the values as <c>|a|b|</c> for one list parameter matched with <c>CHARINDEX(N'|' + column + N'|', @List) &gt; 0</c>,
+    /// or an empty string for none. Values that are empty or contain '|' are skipped. Works on any database compatibility level (no <c>STRING_SPLIT</c>).
+    /// </summary>
+    public static string FormatDelimitedList(IEnumerable<string> values)
+    {
+        var valid = values.Where(value => !string.IsNullOrEmpty(value) && !value.Contains('|')).ToList();
+
+        return valid.Count == 0 ? string.Empty : "|" + string.Join('|', valid) + "|";
+    }
+
+    /// <summary>
     /// Returns a check that selects one row (<paramref name="column"/>): <c>0</c> and <c>RETURN</c> when one of the tables
     /// does not exist (for example an optional feature is not installed or unlicensed), else <c>1</c>. Reports must not fail without them.
     /// </summary>

@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 
+using CMS.ContentEngine;
 using CMS.DataEngine;
 
 using Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
@@ -28,14 +29,16 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
         var parameters = new QueryDataParameters
         {
             new DataParameter(ContentInventorySql.ClassTypeParameter, ClassType.CONTENT_TYPE),
-            new DataParameter(ContentInventorySql.Age3Parameter, now.AddMonths(-3)),
-            new DataParameter(ContentInventorySql.Age6Parameter, now.AddMonths(-6)),
-            new DataParameter(ContentInventorySql.Age12Parameter, now.AddMonths(-12)),
             new DataParameter(ContentInventorySql.OverdueBeforeParameter, now.AddDays(-ContentInventoryReportBuilder.OverdueDays)),
             new DataParameter(ContentInventorySql.LimitParameter, ContentInventoryReportBuilder.ListLimit),
+            new DataParameter(ContentInventorySql.PublishedStatusParameter, (int)VersionStatus.Published),
             new DataParameter(ContentInventorySql.IncludeUnusedParameter, ContentInventoryReportBuilder.IncludesReusable(query)),
             new DataParameter(ContentInventorySql.ReusableKindParameter, ClassContentTypeType.REUSABLE),
         };
+        foreach (var parameter in ContentInventorySql.GetAgeParameters(now))
+        {
+            parameters.Add(parameter);
+        }
         if (query.Kind is string kind)
         {
             parameters.Add(new DataParameter(ContentInventorySql.KindParameter, kind));
@@ -57,13 +60,15 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
         await NextResult(reader, cancellationToken);
         var age = await ReadAge(reader, cancellationToken);
         await NextResult(reader, cancellationToken);
-        var (oldest, _) = await ReadVariants(reader, withWorkflow: false, cancellationToken);
+        var (oldest, _, _) = await ReadVariants(reader, VariantList.Oldest, cancellationToken);
         await NextResult(reader, cancellationToken);
-        var (workflowItems, overdue) = await ReadVariants(reader, withWorkflow: true, cancellationToken);
+        var (workflowItems, overdue, _) = await ReadVariants(reader, VariantList.Workflow, cancellationToken);
         await NextResult(reader, cancellationToken);
         var unusedByType = await ReadUnusedByType(reader, cancellationToken);
         await NextResult(reader, cancellationToken);
         var unusedItems = await ReadUnusedItems(reader, cancellationToken);
+        await NextResult(reader, cancellationToken);
+        var (pendingDrafts, forgotten, pending) = await ReadVariants(reader, VariantList.PendingDrafts, cancellationToken);
 
         return new(contentTypes, languages, statuses)
         {
@@ -74,6 +79,9 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
             WorkflowOverdue = overdue,
             UnusedByContentType = unusedByType,
             UnusedItems = unusedItems,
+            PendingDrafts = pendingDrafts,
+            PendingDraftCount = pending,
+            ForgottenEditCount = forgotten,
         };
     }
 
@@ -164,21 +172,35 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
             return ContentAgeRow.Empty;
         }
 
-        return new(
-            reader.GetInt32(reader.GetOrdinal("Under3Months")),
-            reader.GetInt32(reader.GetOrdinal("Months3To6")),
-            reader.GetInt32(reader.GetOrdinal("Months6To12")),
-            reader.GetInt32(reader.GetOrdinal("Over12Months")));
+        return ContentAgeRow.Read(reader);
     }
 
     /// <summary>
-    /// Reads a variant list. With <paramref name="withWorkflow"/>, also the step, workflow and overdue count columns.
+    /// Variant lists of the batch, by the columns they have.
     /// </summary>
-    private static async Task<(IReadOnlyList<ContentVariantRow> Rows, int Overdue)> ReadVariants(
+    private enum VariantList
+    {
+        /// <summary>Base columns only.</summary>
+        Oldest,
+
+        /// <summary>Also step, workflow and overdue count.</summary>
+        Workflow,
+
+        /// <summary>Also step, workflow, overdue count, pending count, channel label and last publish.</summary>
+        PendingDrafts,
+    }
+
+    /// <summary>
+    /// Reads a variant list with the columns of <paramref name="list"/>. Overdue and total are window counts (0 for lists without them).
+    /// </summary>
+    private static async Task<(IReadOnlyList<ContentVariantRow> Rows, int Overdue, int Total)> ReadVariants(
         DbDataReader reader,
-        bool withWorkflow,
+        VariantList list,
         CancellationToken cancellationToken)
     {
+        bool withWorkflow = list is VariantList.Workflow or VariantList.PendingDrafts;
+        bool withDraft = list is VariantList.PendingDrafts;
+
         int idOrdinal = reader.GetOrdinal("VariantID");
         int nameOrdinal = reader.GetOrdinal("DisplayName");
         int typeOrdinal = reader.GetOrdinal("ClassDisplayName");
@@ -188,10 +210,16 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
         int workflowOrdinal = withWorkflow ? reader.GetOrdinal("WorkflowID") : -1;
         int workflowNameOrdinal = withWorkflow ? reader.GetOrdinal("WorkflowDisplayName") : -1;
         int overdueOrdinal = withWorkflow ? reader.GetOrdinal("OverdueCount") : -1;
-        var links = LinkOrdinals.From(reader, withChannels: true);
+        int pendingOrdinal = withDraft ? reader.GetOrdinal("PendingCount") : -1;
+        int liveOrdinal = withDraft ? reader.GetOrdinal("LivePublishedWhen") : -1;
+        int channelOrdinal = withDraft ? reader.GetOrdinal("ChannelDisplayName") : -1;
+        int reusableOrdinal = withDraft ? reader.GetOrdinal("IsReusable") : -1;
+        int workspaceOrdinal = withDraft ? reader.GetOrdinal("WorkspaceDisplayName") : -1;
+        var links = StatsContentLinkReader.From(reader, withChannels: true);
 
         var rows = new List<ContentVariantRow>();
         int overdue = 0;
+        int total = 0;
         while (await reader.ReadAsync(cancellationToken))
         {
             var row = new ContentVariantRow(
@@ -201,7 +229,7 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
                 reader.GetString(languageOrdinal),
                 reader.GetDateTime(modifiedOrdinal))
             {
-                Link = ReadLink(reader, links),
+                Link = links.Read(reader),
             };
 
             if (withWorkflow)
@@ -217,10 +245,24 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
                 overdue = reader.GetInt32(overdueOrdinal);
             }
 
+            if (withDraft)
+            {
+                row = row with
+                {
+                    LivePublishedWhen = reader.IsDBNull(liveOrdinal) ? null : reader.GetDateTime(liveOrdinal),
+                    Channel = reader.IsDBNull(channelOrdinal) ? null : reader.GetString(channelOrdinal),
+                    IsReusable = !reader.IsDBNull(reusableOrdinal) && reader.GetBoolean(reusableOrdinal),
+                    Workspace = reader.IsDBNull(workspaceOrdinal) ? null : reader.GetString(workspaceOrdinal),
+                };
+
+                // Same value on every row.
+                total = reader.GetInt32(pendingOrdinal);
+            }
+
             rows.Add(row);
         }
 
-        return (rows, overdue);
+        return (rows, overdue, total);
     }
 
     private static async Task<IReadOnlyList<ContentTypeRow>> ReadUnusedByType(DbDataReader reader, CancellationToken cancellationToken)
@@ -251,7 +293,7 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
         int typeOrdinal = reader.GetOrdinal("ClassDisplayName");
         int modifiedOrdinal = reader.GetOrdinal("ModifiedWhen");
 
-        var links = LinkOrdinals.From(reader, withChannels: false);
+        var links = StatsContentLinkReader.From(reader, withChannels: false);
 
         var rows = new List<UnusedItemRow>();
         while (await reader.ReadAsync(cancellationToken))
@@ -262,73 +304,10 @@ internal sealed class ContentInventoryRepository : IContentInventoryRepository
                 reader.IsDBNull(typeOrdinal) ? string.Empty : reader.GetString(typeOrdinal),
                 reader.IsDBNull(modifiedOrdinal) ? null : reader.GetDateTime(modifiedOrdinal))
             {
-                Link = ReadLink(reader, links),
+                Link = links.Read(reader),
             });
         }
 
         return rows;
-    }
-
-
-    /// <summary>
-    /// Returns where the item is edited: the Content hub for reusable items (they have a workspace), else its page, email
-    /// or headless item. <c>null</c> when none is known or the variant has no language.
-    /// </summary>
-    private static ContentItemLink? ReadLink(DbDataReader reader, LinkOrdinals links)
-    {
-        if (reader.IsDBNull(links.Language))
-        {
-            return null;
-        }
-
-        string language = reader.GetString(links.Language);
-
-        int? Get(int ordinal) => ordinal < 0 || reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
-
-        if (Get(links.Workspace) is int workspaceId)
-        {
-            return new(ContentItemLocation.ContentHub, workspaceId, reader.GetInt32(links.Item), language);
-        }
-        if (Get(links.WebsiteChannel) is int websiteChannelId && Get(links.WebPage) is int webPageId)
-        {
-            return new(ContentItemLocation.WebPage, websiteChannelId, webPageId, language);
-        }
-        if (Get(links.EmailChannel) is int emailChannelId && Get(links.Email) is int emailId)
-        {
-            return new(ContentItemLocation.Email, emailChannelId, emailId, language);
-        }
-        if (Get(links.HeadlessChannel) is int headlessChannelId && Get(links.Headless) is int headlessId)
-        {
-            return new(ContentItemLocation.Headless, headlessChannelId, headlessId, language);
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Column ordinals of the link columns (see <c>ContentInventorySql.LinkColumns</c>). -1 when a list has no such column.
-    /// </summary>
-    private sealed record LinkOrdinals(
-        int Item,
-        int Language,
-        int Workspace,
-        int WebsiteChannel,
-        int WebPage,
-        int EmailChannel,
-        int Email,
-        int HeadlessChannel,
-        int Headless)
-    {
-        public static LinkOrdinals From(DbDataReader reader, bool withChannels) =>
-            new(
-                reader.GetOrdinal("ContentItemID"),
-                reader.GetOrdinal("ContentLanguageName"),
-                reader.GetOrdinal("WorkspaceID"),
-                withChannels ? reader.GetOrdinal("WebsiteChannelID") : -1,
-                withChannels ? reader.GetOrdinal("WebPageItemID") : -1,
-                withChannels ? reader.GetOrdinal("EmailChannelID") : -1,
-                withChannels ? reader.GetOrdinal("EmailConfigurationID") : -1,
-                withChannels ? reader.GetOrdinal("HeadlessChannelID") : -1,
-                withChannels ? reader.GetOrdinal("HeadlessItemID") : -1);
     }
 }

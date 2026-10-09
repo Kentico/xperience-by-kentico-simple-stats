@@ -89,7 +89,7 @@ Run `npm run a11y -- <url>` (axe-core) over the pages you touched. Established c
 ## JavaScript
 
 - Three placement tiers — never a `<script src>` inside a partial or view component, which cannot declare a section:
-  - **Site chrome** (`siteHeader.js`, `reveal.js`, `toast.js`) — `<script src>` in `_DancingGoatLayout.cshtml`.
+  - **Site chrome** (`siteHeader.js`, `reveal.js`, `toast.js`, `trackingConsent.js`) — `<script src>` in `_DancingGoatLayout.cshtml`; `_LandingPageLayout.cshtml` loads `reveal.js` and `trackingConsent.js`.
   - **Page behaviour** (`checkoutSummary.js`, `checkoutAddress.js`, `promotionCode.js`, `qtyStepper.js`, `productSku.js`) — `@section scripts { … }` in the top-level view. `_DancingGoatLayout` and `_Layout` both render `styles` and `scripts`; `_LandingPageLayout` renders neither, so add them there if a landing-page view ever needs one.
   - **Page Builder components** (`eventsSlider.js`) — `wwwroot/PageBuilder/Public/**`, bundled by `npm run build:bundles` into the committed `wwwroot/Content/Bundles/Public/pageComponents*.js` and emitted by `<page-builder-scripts />` on the live site *and* in the editor. Expose an `initX` on `window.DancingGoat` so the widget view can initialize instances the editor inserts after the bundle has run — that initialization call is the only script a widget view should contain.
 - Modern baseline, no transpile and no polyfills: classic scripts (not modules), one IIFE per file, `"use strict"` in every file, `const`/`let`, arrow callbacks, optional chaining. `fetch`, `AbortController`, `requestSubmit` and `inert` are all assumed available.

@@ -11,6 +11,7 @@ import { StatsChannelOption, StatsFilter, StatsGrouping } from './types';
 
 const presetDays = [7, 30, 90] as const;
 const customPresetId = 'custom';
+const allTimePresetId = 'all';
 
 const presetItems: NameToggleButton[] = [
   ...presetDays.map((days) => ({ id: String(days), label: `${days} days` })),
@@ -44,6 +45,13 @@ export interface StatsFilterBarProps {
   readonly children?: ReactNode;
   /** Extra buttons shown before the refresh button (for example a link to a native application). */
   readonly actions?: ReactNode;
+  /**
+   * Shows an "All time" preset (the server picks the range) and whether it is selected. Omit to hide it.
+   * Picking another preset or a custom range calls `onChange`; the report then turns "All time" off.
+   */
+  readonly allTime?: boolean;
+  /** Called when the "All time" preset is picked. */
+  readonly onAllTime?: () => void;
 }
 
 function getPresetId(filter: StatsFilter, today: string): string {
@@ -69,15 +77,27 @@ export const StatsFilterBar = ({
   showChannel = true,
   children,
   actions,
+  allTime,
+  onAllTime,
 }: StatsFilterBarProps) => {
   const [showCustom, setShowCustom] = React.useState(
     () => getPresetId(filter, today) === customPresetId,
   );
-  const presetId = showCustom ? customPresetId : getPresetId(filter, today);
+  const presetId = allTime ? allTimePresetId : showCustom ? customPresetId : getPresetId(filter, today);
+  const items = allTime === undefined ? presetItems : [{ id: allTimePresetId, label: 'All time' }, ...presetItems];
 
   const handlePreset = (id: string) => {
+    if (id === allTimePresetId) {
+      setShowCustom(false);
+      onAllTime?.();
+      return;
+    }
     if (id === customPresetId) {
       setShowCustom(true);
+      if (allTime) {
+        // Leaves "All time" with the range it showed.
+        onChange(filter);
+      }
       return;
     }
     setShowCustom(false);
@@ -100,13 +120,13 @@ export const StatsFilterBar = ({
       <div className="SimpleStats-filterItem">
         <span className="SimpleStats-label">Date range</span>
         <NameToggleButtons
-          items={presetItems}
+          items={items}
           selectedItemId={presetId}
           onChange={handlePreset}
         />
       </div>
 
-      {showCustom && (
+      {showCustom && !allTime && (
         <div className="SimpleStats-filterItem">
           <span className="SimpleStats-label">From – to</span>
           <DateTimeRangeInput

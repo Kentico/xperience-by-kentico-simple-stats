@@ -128,13 +128,17 @@ export function toShareCsv(
   );
 }
 
-/** Builds CSV text for "x of y" rows: label, optional secondary label, covered, missing, total, share (%, one decimal). */
+/**
+ * Builds CSV text for "x of y" rows: label, optional secondary label, covered, optional flagged, missing, total, share (%, one decimal).
+ * With a `flagged` caption, the covered column is `covered - flagged` (as in `CoverageTable`).
+ */
 export function toCoverageCsv(
   items: readonly StatsCoverageItem[],
   captions: {
     readonly label: string;
     readonly secondaryLabel?: string;
     readonly covered: string;
+    readonly flagged?: string;
     readonly missing: string;
   },
 ): CsvData {
@@ -143,6 +147,7 @@ export function toCoverageCsv(
       captions.label,
       ...(captions.secondaryLabel ? [captions.secondaryLabel] : []),
       captions.covered,
+      ...(captions.flagged ? [captions.flagged] : []),
       captions.missing,
       'Total',
       'Share (%)',
@@ -150,7 +155,8 @@ export function toCoverageCsv(
     items.map((item) => [
       item.label,
       ...(captions.secondaryLabel ? [item.secondaryLabel] : []),
-      item.covered,
+      captions.flagged ? Math.max(item.covered - (item.flagged ?? 0), 0) : item.covered,
+      ...(captions.flagged ? [item.flagged ?? 0] : []),
       item.missing,
       item.total,
       Math.round(item.share * 1000) / 10,
@@ -159,8 +165,8 @@ export function toCoverageCsv(
 }
 
 /**
- * Builds CSV text for an aged item list: label, optional category / language / detail, since, days
- * and URL (the admin link from `getAdminHref` made absolute).
+ * Builds CSV text for an aged item list: label, optional category / language / channel / detail, since,
+ * optional last modified, optional until, days and URL (the admin link from `getAdminHref` made absolute).
  */
 export function toAgedCsv(
   items: readonly StatsAgedItem[],
@@ -168,8 +174,11 @@ export function toAgedCsv(
     readonly label: string;
     readonly category?: string;
     readonly language?: string;
+    readonly channel?: string;
     readonly detail?: string;
     readonly since: string;
+    readonly lastModified?: string;
+    readonly until?: string;
     readonly days: string;
   },
   getAdminHref?: (item: StatsAgedItem) => string | null,
@@ -179,8 +188,11 @@ export function toAgedCsv(
       captions.label,
       ...(captions.category ? [captions.category] : []),
       ...(captions.language ? [captions.language] : []),
+      ...(captions.channel ? [captions.channel] : []),
       ...(captions.detail ? [captions.detail] : []),
       captions.since,
+      ...(captions.lastModified ? [captions.lastModified] : []),
+      ...(captions.until ? [captions.until] : []),
       captions.days,
       'URL',
     ],
@@ -188,8 +200,11 @@ export function toAgedCsv(
       item.label,
       ...(captions.category ? [item.category] : []),
       ...(captions.language ? [item.language] : []),
+      ...(captions.channel ? [item.channel ?? null] : []),
       ...(captions.detail ? [item.detail] : []),
       item.since,
+      ...(captions.lastModified ? [item.lastModified ?? null] : []),
+      ...(captions.until ? [item.until ?? null] : []),
       item.days,
       toAbsoluteUrl(getAdminHref?.(item) ?? null),
     ]),

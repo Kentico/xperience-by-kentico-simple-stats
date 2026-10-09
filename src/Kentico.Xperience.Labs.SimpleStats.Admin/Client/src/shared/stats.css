@@ -30,6 +30,12 @@
   padding-bottom: var(--spacing-xxl);
 }
 
+/* Pages outside the app's section layout (for example the web page "Stats (Labs)" tab) get no frame padding from the admin. */
+.SimpleStats-root--framed {
+  padding-top: var(--spacing-l);
+  padding-left: var(--spacing-xl);
+}
+
 .SimpleStats-filterBar {
   display: flex;
   flex-wrap: wrap;
@@ -168,4 +174,56 @@
   flex-direction: column;
   gap: var(--spacing-xl);
   min-width: 0;
+}
+
+/* Contact "Stats (Labs)" tab: weekday × hour heatmap (cells shaded inline from the count). */
+.SimpleStats-heatmap {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: var(--font-size-s);
+  line-height: var(--line-m);
+  color: var(--color-text-low-emphasis);
+}
+
+.SimpleStats-heatmap th {
+  font-weight: normal;
+  text-align: center;
+  padding: 0 var(--spacing-xs);
+}
+
+.SimpleStats-heatmap th[scope='row'] {
+  text-align: left;
+}
+
+.SimpleStats-heatmap td {
+  width: 28px;
+  min-width: 20px;
+  height: 24px;
+  border-radius: 4px;
+  background-color: var(--color-background-tag-default);
+}
+
+.SimpleStats-heatmapStart {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-m);
+  padding: var(--spacing-l) 0;
+  font-size: var(--font-size-m);
+  line-height: var(--line-l);
+  color: var(--color-text-low-emphasis);
+}
+
+.SimpleStats-insights {
+  margin: 0;
+  padding-left: var(--spacing-xl);
+}
+
+.SimpleStats-visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

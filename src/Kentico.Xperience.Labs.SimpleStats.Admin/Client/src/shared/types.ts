@@ -19,6 +19,14 @@ export interface StatsSnapshotFilter {
   /** Report-specific kind, for example a content type type (`Website`). */
   readonly kind: string | null;
   readonly channelId: number | null;
+  /** Days the report looks ahead or back from now. Only reports with a window send it. */
+  readonly window?: number | null;
+  /** Content type (class) ID. Only reports with a content type filter send it. */
+  readonly contentTypeId?: number | null;
+  /** Content language ID. Only reports with a language filter send it. */
+  readonly languageId?: number | null;
+  /** Taxonomy ID. Only reports with a taxonomy filter send it. */
+  readonly taxonomyId?: number | null;
 }
 
 /**
@@ -82,7 +90,12 @@ export interface StatsRankedItem {
   readonly tertiaryValue?: number | null;
   /** `tertiaryValue` formatted like `valueText`. */
   readonly tertiaryValueText?: string;
+  /** Meaning of the item for chart colors (for example an order status). Missing for lists without it. */
+  readonly tone?: StatsTone;
 }
+
+/** Mirrors `StatsTone`: meaning of an item for chart colors (traffic light). */
+export type StatsTone = 'Neutral' | 'Problem' | 'Caution' | 'Done';
 
 /** Mirrors `StatsRankedResult`: ranked list for one range and channel. */
 export interface StatsRankedResult {
@@ -180,6 +193,11 @@ export interface StatsShareSlice {
   readonly secondaryValue?: number | null;
   /** `secondaryValue` formatted by the project's price formatter. Missing: format the number. */
   readonly secondaryValueText?: string | null;
+  /**
+   * Fixed slice color (for example a status color). Missing: the next palette color.
+   * Later slices with the same color get lighter variants of it, so they stay apart.
+   */
+  readonly color?: Colors;
 }
 
 /** Mirrors `StatsCoverageItem`: "x of y" row, for example items with a language variant. */
@@ -194,6 +212,8 @@ export interface StatsCoverageItem {
   readonly missing: number;
   /** `covered` / `total` (0–1). */
   readonly share: number;
+  /** Optional part of `covered` that needs attention (for example outdated translations). Left out when not used. */
+  readonly flagged?: number | null;
 }
 
 /** Mirrors `StatsComparison`: a value in the range compared with the previous period of the same length. */
@@ -224,6 +244,12 @@ export interface StatsAgedItem {
   readonly days: number;
   /** Native admin page, relative to the admin root (see `adminLinks.ts`). */
   readonly adminPath?: string | null;
+  /** Optional channel text (for example "Content hub - Marketing" for reusable items, set by the server). Left out when not used. */
+  readonly channel?: string | null;
+  /** Optional date of the last change (`yyyy-MM-dd`, server date) when the age counts from something else (for example a lock). */
+  readonly lastModified?: string | null;
+  /** Optional date the days are counted to (`yyyy-MM-dd`, server date) when it is not the read time (for example the first publish). */
+  readonly until?: string | null;
 }
 
 /**

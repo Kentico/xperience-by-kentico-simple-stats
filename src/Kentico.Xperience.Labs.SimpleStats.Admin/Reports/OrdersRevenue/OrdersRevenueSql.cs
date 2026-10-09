@@ -43,6 +43,7 @@ internal static class OrdersRevenueSql
     public const string PreviousQuantityColumn = "PreviousQuantity";
     public const string StatusIdColumn = CommerceSql.StatusIdColumn;
     public const string StatusNameColumn = CommerceSql.StatusNameColumn;
+    public const string StatusCodeNameColumn = "OrderStatusName";
     public const string ProductKeyColumn = "ProductKey";
     public const string SkuColumn = "Sku";
     public const string NameColumn = "ProductName";
@@ -81,6 +82,7 @@ internal static class OrdersRevenueSql
     private const string ByStatusQuery = """
         SELECT
             S.[OrderStatusID],
+            S.[OrderStatusName],
             S.[OrderStatusDisplayName],
             COUNT(O.[OrderID]) AS [OrderCount],
             ISNULL(SUM(ISNULL(O.[OrderGrandTotal], 0)), 0) AS [Revenue]
@@ -88,7 +90,7 @@ internal static class OrdersRevenueSql
         LEFT JOIN [Commerce_Order] O ON O.[OrderOrderStatusID] = S.[OrderStatusID]
             AND O.[OrderCreatedWhen] >= @From
             AND O.[OrderCreatedWhen] < @ToExclusive
-        GROUP BY S.[OrderStatusID], S.[OrderStatusDisplayName], S.[OrderStatusOrder]
+        GROUP BY S.[OrderStatusID], S.[OrderStatusName], S.[OrderStatusDisplayName], S.[OrderStatusOrder]
         ORDER BY S.[OrderStatusOrder], S.[OrderStatusID];
         """;
 

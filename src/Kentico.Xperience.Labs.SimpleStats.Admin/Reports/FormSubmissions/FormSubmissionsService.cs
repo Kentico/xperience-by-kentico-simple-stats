@@ -70,7 +70,12 @@ internal sealed class FormSubmissionsService(
     /// <summary>
     /// Path of the "Submissions" tab of the form in the Forms application.
     /// </summary>
-    private string? GetSubmissionsPath(int formId) =>
+    private string? GetSubmissionsPath(int formId) => GetSubmissionsPath(adminLinks, formId);
+
+    /// <summary>
+    /// Path of the "Submissions" tab of the form in the Forms application, or <c>null</c>. Shared with the contact stats tab.
+    /// </summary>
+    internal static string? GetSubmissionsPath(IStatsAdminLinks adminLinks, int formId) =>
         adminLinks.GetPath<FormSubmissionsTab>(new PageParameterValues
         {
             { typeof(FormEditSection), formId },

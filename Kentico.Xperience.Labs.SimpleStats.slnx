@@ -6,6 +6,7 @@
     <Project Path="src/Kentico.Xperience.Labs.SimpleStats.Admin/Kentico.Xperience.Labs.SimpleStats.Admin.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Kentico.Xperience.Labs.SimpleStats.Admin.IntegrationTests/Kentico.Xperience.Labs.SimpleStats.Admin.IntegrationTests.csproj" />
     <Project Path="tests/Kentico.Xperience.Labs.SimpleStats.Admin.Tests/Kentico.Xperience.Labs.SimpleStats.Admin.Tests.csproj" />
   </Folder>
 </Solution>

@@ -5,9 +5,6 @@
     <UserSecretsId>215d0ffb-804a-45e3-bd8c-011074f9d0f4</UserSecretsId>
     <SeparatedAdmin Condition="'$(SeparatedAdmin)' == ''">false</SeparatedAdmin>
     <NoWarn>$(NoWarn);KXE0004;KXE0006</NoWarn>
-    <HotChocolateImplicitUsings>disable</HotChocolateImplicitUsings>
-    <Nullable>annotations</Nullable>
-    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="App_Data\CMSModules\WebFarm\webfarm.sync" />

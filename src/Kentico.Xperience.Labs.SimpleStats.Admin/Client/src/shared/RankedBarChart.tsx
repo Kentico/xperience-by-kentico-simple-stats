@@ -106,9 +106,9 @@ export const RankedBarChart = React.memo(function RankedBarChart({
     root.numberFormatter.set('numberFormat', captions.valueKind ? chartNumberFormat(captions.valueKind) : '#,###');
 
     const isRatio = captions.valueKind === 'Ratio';
-    const tokens = getChartTokens();
-    const barColor = getSeriesPalette()[0];
-    const highlightValue = resolveToken(Colors.AlertBackgroundHighEmphasis);
+    const tokens = getChartTokens(root.dom);
+    const barColor = getSeriesPalette(root.dom)[0];
+    const highlightValue = resolveToken(Colors.AlertBackgroundHighEmphasis, root.dom);
     const highlightColor = highlightValue ? am5.color(highlightValue) : undefined;
 
     const chart = root.container.children.push(
@@ -235,6 +235,8 @@ export const RankedBarChart = React.memo(function RankedBarChart({
       cornerRadiusTR: 2,
       cornerRadiusBR: 2,
       ...(barColor ? { fill: barColor } : {}),
+      // Per-row overrides (the highlight fill below).
+      templateField: 'columnSettings',
     });
 
     series.bullets.push(() =>
@@ -253,14 +255,13 @@ export const RankedBarChart = React.memo(function RankedBarChart({
       }),
     );
 
-    // Highlighted rows (see `highlightFrom`) use the alert color.
-    if (highlightColor && data.some((row) => row.highlight)) {
-      series.columns.template.adapters.add('fill', (fill, target) =>
-        (target.dataItem?.dataContext as ChartRow | undefined)?.highlight ? highlightColor : fill,
-      );
-    }
-
-    series.data.setAll(data);
+    // Highlighted rows (see `highlightFrom`) use the alert color, set per row through `templateField`
+    // (a `fill` adapter on the template did not take effect).
+    series.data.setAll(
+      data.map((row) =>
+        row.highlight && highlightColor ? { ...row, columnSettings: { fill: highlightColor } } : row,
+      ),
+    );
 
     // Bars of linked items open the link, like the table's link cells.
     if (data.some((row) => row.href)) {

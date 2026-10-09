@@ -1,3 +1,7 @@
+using CMS.DataEngine;
+
+using Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
+
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
 
 /// <summary>
@@ -5,6 +9,7 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
 /// Only constant SQL fragments are combined; all values are parameters.
 /// </summary>
 /// <remarks>
+/// Items, variants, filters and link columns come from <see cref="StatsContentSql"/>.
 /// Items are <c>CMS_ContentItem</c> rows whose class is a content type (<c>ClassType</c> = <see cref="ClassTypeParameter"/>).
 /// Items without a content type (page folders in website channels) are not counted.
 /// The optional filters are the content type type (<c>CMS_Class.ClassContentTypeType</c>) and
@@ -14,9 +19,9 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
 /// </remarks>
 internal static class ContentInventorySql
 {
-    public const string ClassTypeParameter = "@ClassType";
-    public const string KindParameter = "@Kind";
-    public const string ChannelParameter = "@ChannelID";
+    public const string ClassTypeParameter = StatsContentSql.ClassTypeParameter;
+    public const string KindParameter = StatsContentSql.KindParameter;
+    public const string ChannelParameter = StatsContentSql.ChannelParameter;
 
     /// <summary>Modified on or after this time: under 3 months old.</summary>
     public const string Age3Parameter = "@Age3";
@@ -30,27 +35,19 @@ internal static class ContentInventorySql
     /// <summary>Variants in a workflow step modified before this time count as waiting too long.</summary>
     public const string OverdueBeforeParameter = "@OverdueBefore";
 
+    /// <summary>
+    /// <see cref="CMS.ContentEngine.VersionStatus.Published"/>: status of a variant's published version (<c>ContentItemCommonDataVersionStatus</c>).
+    /// </summary>
+    public const string PublishedStatusParameter = "@PublishedStatus";
+
     /// <summary>Maximum number of rows of each list.</summary>
     public const string LimitParameter = "@Limit";
 
     /// <summary>1 to read unused reusable items, 0 to return them empty (the kind or channel filter excludes reusable items).</summary>
     public const string IncludeUnusedParameter = "@IncludeUnused";
 
-    /// <summary>Content type type of reusable items (<c>ClassContentTypeType.REUSABLE</c>).</summary>
-    public const string ReusableKindParameter = "@ReusableKind";
-
-    // Filtered items; {0} = channel condition, {1} = kind condition.
-    private const string ItemsWhere = """
-        WHERE C.[ClassType] = @ClassType
-            AND C.[ClassContentTypeType] IS NOT NULL{1}{0}
-        """;
-
-    // Filtered language variants of the filtered items.
-    private const string VariantsFrom = """
-        FROM [CMS_ContentItemLanguageMetadata] M
-        INNER JOIN [CMS_ContentItem] I ON I.[ContentItemID] = M.[ContentItemLanguageMetadataContentItemID]
-        INNER JOIN [CMS_Class] C ON C.[ClassID] = I.[ContentItemContentTypeID]
-        """;
+    /// <inheritdoc cref="StatsContentUsageSql.ReusableKindParameter"/>
+    public const string ReusableKindParameter = StatsContentUsageSql.ReusableKindParameter;
 
     // 1. Every content type of the kind with its item count (0 included).
     // The channel condition is part of the LEFT JOIN, so types without items in the channel stay listed with 0.
@@ -109,13 +106,10 @@ internal static class ContentInventorySql
             W.[ContentWorkflowDisplayName];
         """;
 
-    // 4. Language variants per age of the last change (one row).
+    // 4. Language variants per age of the last change (one row). {7} = age columns.
     private const string AgeQuery = """
         SELECT
-            ISNULL(SUM(CASE WHEN M.[ContentItemLanguageMetadataModifiedWhen] >= @Age3 THEN 1 ELSE 0 END), 0) AS [Under3Months],
-            ISNULL(SUM(CASE WHEN M.[ContentItemLanguageMetadataModifiedWhen] < @Age3 AND M.[ContentItemLanguageMetadataModifiedWhen] >= @Age6 THEN 1 ELSE 0 END), 0) AS [Months3To6],
-            ISNULL(SUM(CASE WHEN M.[ContentItemLanguageMetadataModifiedWhen] < @Age6 AND M.[ContentItemLanguageMetadataModifiedWhen] >= @Age12 THEN 1 ELSE 0 END), 0) AS [Months6To12],
-            ISNULL(SUM(CASE WHEN M.[ContentItemLanguageMetadataModifiedWhen] < @Age12 THEN 1 ELSE 0 END), 0) AS [Over12Months]
+            {7}
         {2}
         {3};
         """;
@@ -163,16 +157,11 @@ internal static class ContentInventorySql
         ORDER BY M.[ContentItemLanguageMetadataModifiedWhen], M.[ContentItemLanguageMetadataID];
         """;
 
-    // Reusable items that no content item references (content item selector fields and Page Builder widget properties
-    // are stored in CMS_ContentItemReference, from any language and version of the referencing item).
-    private const string UnusedWhere = """
+    // Reusable items that no content item references. Same definition as the reusable content usage report (see StatsContentUsageSql).
+    private const string UnusedWhere = $"""
         WHERE @IncludeUnused = 1
-            AND C.[ClassType] = @ClassType
-            AND C.[ClassContentTypeType] = @ReusableKind
-            AND NOT EXISTS (
-                SELECT 1 FROM [CMS_ContentItemReference] R
-                WHERE R.[ContentItemReferenceTargetItemID] = I.[ContentItemID]
-            )
+            AND {StatsContentUsageSql.ReusableCondition}
+            AND {StatsContentUsageSql.UnusedCondition}
         """;
 
     // 7. Unused reusable items per content type.
@@ -185,7 +174,7 @@ internal static class ContentInventorySql
         """;
 
     // 8. Unused reusable items, least recently modified first. Name and date come from the most recently modified variant.
-    private const string UnusedItemsQuery = """
+    private const string UnusedItemsQuery = $$"""
         SELECT TOP (@Limit)
             I.[ContentItemID],
             I.[ContentItemWorkspaceID] AS [WorkspaceID],
@@ -195,61 +184,81 @@ internal static class ContentInventorySql
             N.[ModifiedWhen]
         FROM [CMS_ContentItem] I
         INNER JOIN [CMS_Class] C ON C.[ClassID] = I.[ContentItemContentTypeID]
-        OUTER APPLY (
-            SELECT TOP (1)
-                L.[ContentLanguageName],
-                M.[ContentItemLanguageMetadataDisplayName] AS [DisplayName],
-                M.[ContentItemLanguageMetadataModifiedWhen] AS [ModifiedWhen]
-            FROM [CMS_ContentItemLanguageMetadata] M
-            INNER JOIN [CMS_ContentLanguage] L ON L.[ContentLanguageID] = M.[ContentItemLanguageMetadataContentLanguageID]
-            WHERE M.[ContentItemLanguageMetadataContentItemID] = I.[ContentItemID]
-            ORDER BY M.[ContentItemLanguageMetadataModifiedWhen] DESC
-        ) N
+        {{StatsContentUsageSql.LatestVariantApply}}
         {4}
         ORDER BY N.[ModifiedWhen], I.[ContentItemID];
         """;
 
-    // Where each listed item is edited in the admin: the workspace of reusable items, or the page, email or headless item
-    // of the item and its channel (see StatsChannelItemPaths). TOP (1) keeps one row per variant if data is inconsistent.
-    private const string LinkColumns = """
-        CASE WHEN I.[ContentItemIsReusable] = 1 THEN I.[ContentItemWorkspaceID] END AS [WorkspaceID],
-                    P.[WebPageItemWebsiteChannelID] AS [WebsiteChannelID],
-                    P.[WebPageItemID],
-                    E.[EmailConfigurationEmailChannelID] AS [EmailChannelID],
-                    E.[EmailConfigurationID],
-                    H.[HeadlessItemHeadlessChannelID] AS [HeadlessChannelID],
-                    H.[HeadlessItemID],
+    // 9. Language variants with a newer draft of their published version (forgotten edits), least recently changed draft first.
+    // A published version that is not the latest one has a newer version (a draft, maybe in a workflow step). Initial drafts have no
+    // published version, so they are not listed. Drafts scheduled to publish are planned (Publishing calendar), not listed. The window counts run before TOP, so they cover all of them.
+    private const string PendingDraftsQuery = $$"""
+        SELECT TOP (@Limit)
+            M.[ContentItemLanguageMetadataID] AS [VariantID],
+            I.[ContentItemID],
+            {5}
+            L.[ContentLanguageName],
+            M.[ContentItemLanguageMetadataDisplayName] AS [DisplayName],
+            C.[ClassDisplayName],
+            L.[ContentLanguageDisplayName],
+            {{StatsContentSql.ChannelLabelColumns}}
+            M.[ContentItemLanguageMetadataModifiedWhen] AS [ModifiedWhen],
+            D.[ContentItemCommonDataLastPublishedWhen] AS [LivePublishedWhen],
+            S.[ContentWorkflowStepDisplayName] AS [StepDisplayName],
+            W.[ContentWorkflowID] AS [WorkflowID],
+            W.[ContentWorkflowDisplayName] AS [WorkflowDisplayName],
+            COUNT(*) OVER () AS [PendingCount],
+            SUM(CASE WHEN M.[ContentItemLanguageMetadataModifiedWhen] < @OverdueBefore THEN 1 ELSE 0 END) OVER () AS [OverdueCount]
+        {2}
+        INNER JOIN [CMS_ContentLanguage] L ON L.[ContentLanguageID] = M.[ContentItemLanguageMetadataContentLanguageID]
+        CROSS APPLY (
+            SELECT TOP (1) D1.[ContentItemCommonDataLastPublishedWhen]
+            FROM [CMS_ContentItemCommonData] D1
+            WHERE D1.[ContentItemCommonDataContentItemID] = M.[ContentItemLanguageMetadataContentItemID]
+                AND D1.[ContentItemCommonDataContentLanguageID] = M.[ContentItemLanguageMetadataContentLanguageID]
+                AND D1.[ContentItemCommonDataVersionStatus] = @PublishedStatus
+                AND D1.[ContentItemCommonDataIsLatest] = 0
+            ORDER BY D1.[ContentItemCommonDataID] DESC
+        ) D
+        {{StatsContentSql.ChannelLabelJoins}}
+        {6}
+        LEFT JOIN [CMS_ContentWorkflowStep] S ON S.[ContentWorkflowStepID] = M.[ContentItemLanguageMetadataContentWorkflowStepID]
+        LEFT JOIN [CMS_ContentWorkflow] W ON W.[ContentWorkflowID] = S.[ContentWorkflowStepWorkflowID]
+        {3}
+            AND M.[ContentItemLanguageMetadataScheduledPublishWhen] IS NULL
+        ORDER BY M.[ContentItemLanguageMetadataModifiedWhen], M.[ContentItemLanguageMetadataID];
         """;
 
-    private const string LinkApply = """
-        OUTER APPLY (
-                    SELECT TOP (1) W1.[WebPageItemID], W1.[WebPageItemWebsiteChannelID]
-                    FROM [CMS_WebPageItem] W1
-                    WHERE W1.[WebPageItemContentItemID] = I.[ContentItemID]
-                    ORDER BY W1.[WebPageItemID]
-                ) P
-                OUTER APPLY (
-                    SELECT TOP (1) E1.[EmailConfigurationID], E1.[EmailConfigurationEmailChannelID]
-                    FROM [EmailLibrary_EmailConfiguration] E1
-                    WHERE E1.[EmailConfigurationContentItemID] = I.[ContentItemID]
-                    ORDER BY E1.[EmailConfigurationID]
-                ) E
-                OUTER APPLY (
-                    SELECT TOP (1) H1.[HeadlessItemID], H1.[HeadlessItemHeadlessChannelID]
-                    FROM [CMS_HeadlessItem] H1
-                    WHERE H1.[HeadlessItemContentItemID] = I.[ContentItemID]
-                    ORDER BY H1.[HeadlessItemID]
-                ) H
-        """;
+    /// <summary>
+    /// Returns the age bucket parameters (<see cref="Age3Parameter"/>, <see cref="Age6Parameter"/>, <see cref="Age12Parameter"/>):
+    /// 3, 6 and <see cref="ContentInventoryReportBuilder.StaleMonths"/> months before <paramref name="now"/> (server time).
+    /// </summary>
+    public static IEnumerable<DataParameter> GetAgeParameters(DateTime now) =>
+    [
+        new DataParameter(Age3Parameter, now.AddMonths(-3)),
+        new DataParameter(Age6Parameter, now.AddMonths(-6)),
+        new DataParameter(Age12Parameter, GetStaleBefore(now)),
+    ];
 
-    private const string ChannelCondition = """
+    /// <summary>
+    /// Variants last changed before this time are stale (not changed in <see cref="ContentInventoryReportBuilder.StaleMonths"/> months).
+    /// </summary>
+    public static DateTime GetStaleBefore(DateTime now) => now.AddMonths(-ContentInventoryReportBuilder.StaleMonths);
 
-            AND I.[ContentItemChannelID] = @ChannelID
-        """;
-
-    private const string KindCondition = """
-
-            AND C.[ClassContentTypeType] = @Kind
+    /// <summary>
+    /// Select columns (no trailing comma) that sum <paramref name="value"/> per age bucket of <paramref name="modifiedColumn"/>
+    /// (needs the <see cref="GetAgeParameters"/> parameters): <c>[Under3Months]</c>, <c>[Months3To6]</c>, <c>[Months6To12]</c> and
+    /// <c>[Over12Months]</c>, each followed by <paramref name="suffix"/>. Read with <see cref="ContentAgeRow"/>. Constant arguments only.
+    /// </summary>
+    /// <param name="modifiedColumn">Column with the last change, for example <c>M.[ContentItemLanguageMetadataModifiedWhen]</c>.</param>
+    /// <param name="value">Summed per row: <c>1</c> counts rows, a column sums it (for example visits).</param>
+    /// <param name="suffix">Suffix of the column names, for example <c>Visits</c>.</param>
+    public static string AgeColumns(string modifiedColumn, string value = "1", string suffix = "") =>
+        $"""
+        ISNULL(SUM(CASE WHEN {modifiedColumn} >= @Age3 THEN {value} ELSE 0 END), 0) AS [Under3Months{suffix}],
+                    ISNULL(SUM(CASE WHEN {modifiedColumn} < @Age3 AND {modifiedColumn} >= @Age6 THEN {value} ELSE 0 END), 0) AS [Months3To6{suffix}],
+                    ISNULL(SUM(CASE WHEN {modifiedColumn} < @Age6 AND {modifiedColumn} >= @Age12 THEN {value} ELSE 0 END), 0) AS [Months6To12{suffix}],
+                    ISNULL(SUM(CASE WHEN {modifiedColumn} < @Age12 THEN {value} ELSE 0 END), 0) AS [Over12Months{suffix}]
         """;
 
     /// <summary>
@@ -258,15 +267,22 @@ internal static class ContentInventorySql
     /// </summary>
     /// <remarks>
     /// Result sets, in order: content types, languages, statuses, age buckets (one row), oldest variants,
-    /// variants in a workflow step, unused reusable items per content type, unused reusable items.
+    /// variants in a workflow step, unused reusable items per content type, unused reusable items,
+    /// variants with a newer draft of their published version.
     /// </remarks>
     public static string Build(bool hasKind, bool hasChannel)
     {
-        string channel = hasChannel ? ChannelCondition : string.Empty;
-        string kind = hasKind ? KindCondition : string.Empty;
-        string itemsWhere = string.Format(null, ItemsWhere, channel, kind);
-
-        object[] args = [channel, kind, VariantsFrom, itemsWhere, UnusedWhere, LinkColumns, LinkApply];
+        object[] args =
+        [
+            StatsContentSql.ChannelCondition(hasChannel),
+            StatsContentSql.KindCondition(hasKind),
+            StatsContentSql.VariantsFrom,
+            StatsContentSql.ItemsWhere(hasKind, hasChannel),
+            UnusedWhere,
+            StatsContentSql.LinkColumns,
+            StatsContentSql.LinkApply,
+            AgeColumns("M.[ContentItemLanguageMetadataModifiedWhen]"),
+        ];
 
         return string.Join(
             Environment.NewLine,
@@ -280,6 +296,7 @@ internal static class ContentInventorySql
                 WorkflowQuery,
                 UnusedByTypeQuery,
                 UnusedItemsQuery,
+                PendingDraftsQuery,
             }.Select(query => string.Format(null, query, args)));
     }
 }

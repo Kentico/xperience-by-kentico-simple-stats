@@ -21,7 +21,8 @@ export interface StatsTileProps {
   readonly hasError?: boolean;
   readonly isEmpty?: boolean;
   readonly emptyMessage?: string;
-  readonly renderChart: () => ReactNode;
+  /** Chart view. Omit for list-only tiles: the chart/table toggle is hidden and the table is shown. */
+  readonly renderChart?: () => ReactNode;
   readonly renderTable: () => ReactNode;
   /** Called by the CSV button. Omit to hide the button. Also hidden without the Export permission. */
   readonly onExportCsv?: () => void;
@@ -36,7 +37,7 @@ const viewItems = [
   { id: 'table', icon: 'xp-table' as const, tooltip: 'Table', ariaLabel: 'Show table' },
 ];
 
-/** Report tile: headline, chart/table toggle, CSV export, loading, empty and error states. */
+/** Report tile: headline, chart/table toggle (when it has a chart), CSV export, loading, empty and error states. */
 export const StatsTile = ({
   headline,
   description,
@@ -63,7 +64,7 @@ export const StatsTile = ({
   } else if (isEmpty) {
     content = <div className="SimpleStats-empty">{emptyMessage}</div>;
   } else {
-    content = view === 'chart' ? renderChart() : renderTable();
+    content = view === 'chart' && renderChart ? renderChart() : renderTable();
   }
 
   return (
@@ -73,11 +74,13 @@ export const StatsTile = ({
           <Headline size={HeadlineSize.M}>{headline}</Headline>
           <div className="SimpleStats-tileActions">
             {headerControls}
-            <IconToggleButtons
-              items={viewItems}
-              selectedItemId={view}
-              onChange={(id) => setView(id as StatsTileView)}
-            />
+            {renderChart && (
+              <IconToggleButtons
+                items={viewItems}
+                selectedItemId={view}
+                onChange={(id) => setView(id as StatsTileView)}
+              />
+            )}
             {onExportCsv && canExport && (
               <Button
                 label="Export CSV"

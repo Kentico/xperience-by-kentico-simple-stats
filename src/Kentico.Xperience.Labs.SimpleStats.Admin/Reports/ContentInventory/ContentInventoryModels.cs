@@ -1,3 +1,5 @@
+using System.Data.Common;
+
 using Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
 
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
@@ -22,6 +24,7 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
 /// <param name="LanguageCoverage">Items with a variant in each language vs all items. Default language first.</param>
 /// <param name="Age">Language variants by time since their last change.</param>
 /// <param name="Workflow">Language variants waiting in a workflow step.</param>
+/// <param name="ForgottenEdits">Published language variants with a newer, unpublished draft.</param>
 /// <param name="UnusedReusable">Reusable items no content item references. <c>null</c> when the filters exclude reusable items.</param>
 /// <param name="TotalVariants">Language variants of the items (one item can have one per language).</param>
 /// <param name="ScheduledPublish">Language variants with a scheduled publish.</param>
@@ -39,6 +42,7 @@ public sealed record ContentInventoryResult(
     IReadOnlyList<StatsCoverageItem> LanguageCoverage,
     ContentAgeSummary Age,
     ContentWorkflowSummary Workflow,
+    ContentForgottenEditsSummary ForgottenEdits,
     UnusedReusableSummary? UnusedReusable,
     int TotalVariants,
     int ScheduledPublish,
@@ -75,6 +79,20 @@ public sealed record ContentAgeSummary(StatsRankedResult Buckets, int NotModifie
 public sealed record ContentWorkflowSummary(int InWorkflow, int Overdue, int OverdueDays, IReadOnlyList<StatsAgedItem> Items);
 
 /// <summary>
+/// Published language variants with a newer draft (a published version that is not the latest one). Visitors see the
+/// published version until the draft is published. Initial drafts (never published) are not included.
+/// </summary>
+/// <param name="PendingDrafts">Variants with a newer draft of their published version.</param>
+/// <param name="Forgotten">Of <paramref name="PendingDrafts"/>, variants whose draft has not changed for more than <paramref name="OverdueDays"/> days.</param>
+/// <param name="OverdueDays">Days after which a draft counts as forgotten (<see cref="ContentInventoryReportBuilder.OverdueDays"/>).</param>
+/// <param name="Items">
+/// Variants with a newer draft, least recently changed draft first (up to <see cref="ContentInventoryReportBuilder.ListLimit"/>).
+/// <see cref="StatsAgedItem.Since"/> is the last change of the draft; <see cref="StatsAgedItem.Detail"/> is "Live since" the last publish,
+/// plus the workflow step when the draft is in one.
+/// </param>
+public sealed record ContentForgottenEditsSummary(int PendingDrafts, int Forgotten, int OverdueDays, IReadOnlyList<StatsAgedItem> Items);
+
+/// <summary>
 /// Reusable items that no content item references (content item selector fields and Page Builder widget properties).
 /// </summary>
 /// <param name="Count">Unused reusable items.</param>
@@ -91,12 +109,12 @@ public sealed record UnusedReusableSummary(int Count, int ReusableItems, StatsRa
 /// <param name="DisplayName">Content type display name.</param>
 /// <param name="Kind">Content type type (<c>ClassContentTypeType</c>).</param>
 /// <param name="ItemCount">Items of the type that match the filters.</param>
-public sealed record ContentTypeRow(int ClassId, string CodeName, string DisplayName, string Kind, int ItemCount);
+internal sealed record ContentTypeRow(int ClassId, string CodeName, string DisplayName, string Kind, int ItemCount);
 
 /// <summary>
 /// Content language with the number of filtered items that have a variant in it.
 /// </summary>
-public sealed record ContentLanguageRow(int LanguageId, string CodeName, string DisplayName, bool IsDefault, int ItemCount);
+internal sealed record ContentLanguageRow(int LanguageId, string CodeName, string DisplayName, bool IsDefault, int ItemCount);
 
 /// <summary>
 /// Language variants with the same latest version status and workflow step.
@@ -109,7 +127,7 @@ public sealed record ContentLanguageRow(int LanguageId, string CodeName, string 
 /// <param name="VariantCount">Language variants.</param>
 /// <param name="ScheduledPublish">Of <paramref name="VariantCount"/>, variants with a scheduled publish.</param>
 /// <param name="ScheduledUnpublish">Of <paramref name="VariantCount"/>, variants with a scheduled unpublish.</param>
-public sealed record ContentStatusRow(
+internal sealed record ContentStatusRow(
     int VersionStatus,
     int? StepId,
     string? StepDisplayName,
@@ -122,9 +140,19 @@ public sealed record ContentStatusRow(
 /// <summary>
 /// Language variants per age of the last change.
 /// </summary>
-public sealed record ContentAgeRow(int Under3Months, int Months3To6, int Months6To12, int Over12Months)
+internal sealed record ContentAgeRow(int Under3Months, int Months3To6, int Months6To12, int Over12Months)
 {
     public static ContentAgeRow Empty { get; } = new(0, 0, 0, 0);
+
+    /// <summary>
+    /// Reads the current row's <see cref="ContentInventorySql.AgeColumns"/> with the same <paramref name="suffix"/>.
+    /// </summary>
+    public static ContentAgeRow Read(DbDataReader reader, string suffix = "") =>
+        new(
+            reader.GetInt32(reader.GetOrdinal("Under3Months" + suffix)),
+            reader.GetInt32(reader.GetOrdinal("Months3To6" + suffix)),
+            reader.GetInt32(reader.GetOrdinal("Months6To12" + suffix)),
+            reader.GetInt32(reader.GetOrdinal("Over12Months" + suffix)));
 }
 
 /// <summary>
@@ -138,7 +166,7 @@ public sealed record ContentAgeRow(int Under3Months, int Months3To6, int Months6
 /// <param name="StepDisplayName">Workflow step display name, or <c>null</c>.</param>
 /// <param name="WorkflowId">Workflow ID, or <c>null</c>.</param>
 /// <param name="WorkflowDisplayName">Workflow display name, or <c>null</c>.</param>
-public sealed record ContentVariantRow(
+internal sealed record ContentVariantRow(
     int VariantId,
     string DisplayName,
     string ContentType,
@@ -150,6 +178,18 @@ public sealed record ContentVariantRow(
 {
     /// <inheritdoc cref="ContentItemLink"/>
     public ContentItemLink? Link { get; init; }
+
+    /// <summary>Last publish of the variant's published version (server time), or <c>null</c>. Only for variants with a newer draft.</summary>
+    public DateTime? LivePublishedWhen { get; init; }
+
+    /// <summary>Channel display name, or <c>null</c> (see <see cref="StatsContentChannels.GetLabel"/>). Only for variants with a newer draft.</summary>
+    public string? Channel { get; init; }
+
+    /// <summary>Whether the item is a reusable item. Only for variants with a newer draft.</summary>
+    public bool IsReusable { get; init; }
+
+    /// <summary>Workspace display name, or <c>null</c>. Only for variants with a newer draft.</summary>
+    public string? Workspace { get; init; }
 }
 
 /// <summary>
@@ -159,47 +199,16 @@ public sealed record ContentVariantRow(
 /// <param name="DisplayName">Display name of the most recently changed variant (or the item name).</param>
 /// <param name="ContentType">Content type display name.</param>
 /// <param name="ModifiedWhen">Last change of any variant, or <c>null</c> when the item has no variant.</param>
-public sealed record UnusedItemRow(int ItemId, string DisplayName, string ContentType, DateTime? ModifiedWhen)
+internal sealed record UnusedItemRow(int ItemId, string DisplayName, string ContentType, DateTime? ModifiedWhen)
 {
     /// <inheritdoc cref="ContentItemLink"/>
     public ContentItemLink? Link { get; init; }
 }
 
 /// <summary>
-/// What is needed to link a content item in the admin.
-/// </summary>
-/// <param name="Location">Application the item is edited in.</param>
-/// <param name="ContainerId">
-/// Workspace ID (<see cref="ContentItemLocation.ContentHub"/>), <c>WebsiteChannelID</c>, <c>EmailChannelID</c> or <c>HeadlessChannelID</c>.
-/// </param>
-/// <param name="ObjectId">
-/// Content item ID (<see cref="ContentItemLocation.ContentHub"/>), <c>WebPageItemID</c>, <c>EmailConfigurationID</c> or <c>HeadlessItemID</c>.
-/// </param>
-/// <param name="LanguageName">Code name of the language variant to open.</param>
-public sealed record ContentItemLink(ContentItemLocation Location, int ContainerId, int ObjectId, string LanguageName);
-
-/// <summary>
-/// Application a content item is edited in.
-/// </summary>
-public enum ContentItemLocation
-{
-    /// <summary>Reusable item in the Content hub (by workspace).</summary>
-    ContentHub,
-
-    /// <summary>Page in a website channel.</summary>
-    WebPage,
-
-    /// <summary>Email in an email channel.</summary>
-    Email,
-
-    /// <summary>Headless item in a headless channel.</summary>
-    Headless,
-}
-
-/// <summary>
 /// Aggregates read by <see cref="IContentInventoryRepository"/>.
 /// </summary>
-public sealed record ContentInventoryData(
+internal sealed record ContentInventoryData(
     IReadOnlyList<ContentTypeRow> ContentTypes,
     IReadOnlyList<ContentLanguageRow> Languages,
     IReadOnlyList<ContentStatusRow> Statuses)
@@ -227,6 +236,17 @@ public sealed record ContentInventoryData(
 
     /// <summary>Unused reusable items, least recently changed first.</summary>
     public IReadOnlyList<UnusedItemRow> UnusedItems { get; init; } = [];
+
+    /// <summary>Variants with a newer draft of their published version, least recently changed draft first.</summary>
+    public IReadOnlyList<ContentVariantRow> PendingDrafts { get; init; } = [];
+
+    /// <summary>Variants with a newer draft of their published version (all, not only <see cref="PendingDrafts"/>).</summary>
+    public int PendingDraftCount { get; init; }
+
+    /// <summary>
+    /// Variants with a newer draft unchanged for more than <see cref="ContentInventoryReportBuilder.OverdueDays"/> days (all, not only <see cref="PendingDrafts"/>).
+    /// </summary>
+    public int ForgottenEditCount { get; init; }
 }
 
 /// <summary>
