@@ -7,18 +7,18 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Tests;
 
 public class PublishingCalendarSqlTests
 {
-    // Counts (3 sub-queries), days, upcoming, recent.
-    private const int FilteredStatements = 6;
+    // Upcoming and recent inserts into @Events.
+    private const int FilteredStatements = 2;
 
     private const string UpcomingCondition = "EV.[When] >= " + PublishingCalendarSql.UpcomingFromParameter;
     private const string UpcomingEndCondition = "EV.[When] <= " + PublishingCalendarSql.UpcomingToParameter;
 
     [Test]
-    public void Build_WithoutSends_ReturnsFourQueries_WithoutPlaceholders()
+    public void Build_WithoutSends_ReturnsEventsInsertsAndFourQueries_WithoutPlaceholders()
     {
         string sql = PublishingCalendarSql.Build(hasKind: true, hasChannel: true, withSends: false);
 
-        Assert.That(Statements(sql), Has.Length.EqualTo(5)); // SET NOCOUNT ON + 4 queries.
+        Assert.That(Statements(sql), Has.Length.EqualTo(8)); // SET NOCOUNT ON, @Events, 2 inserts, 4 queries.
         Assert.That(sql, Does.Not.Contain("{").And.Not.Contain("}"));
         Assert.That(sql, Does.Not.Contain("EmailLibrary_SendConfiguration"));
         Assert.That(sql, Does.Not.Contain(PublishingCalendarSql.RegularPurposeParameter));
@@ -48,9 +48,9 @@ public class PublishingCalendarSqlTests
     {
         string sql = PublishingCalendarSql.Build(hasKind: false, hasChannel: false, withSends: false);
 
-        // Counts (2 sub-queries), days, upcoming.
-        Assert.That(Count(sql, "M.[ContentItemLanguageMetadataScheduledPublishWhen]"), Is.EqualTo(4));
-        Assert.That(Count(sql, "M.[ContentItemLanguageMetadataScheduledUnpublishWhen]"), Is.EqualTo(4));
+        // One events source, read into @Events once.
+        Assert.That(Count(sql, "M.[ContentItemLanguageMetadataScheduledPublishWhen]"), Is.EqualTo(1));
+        Assert.That(Count(sql, "M.[ContentItemLanguageMetadataScheduledUnpublishWhen]"), Is.EqualTo(1));
     }
 
     [Test]
@@ -60,9 +60,9 @@ public class PublishingCalendarSqlTests
 
         Assert.Multiple(() =>
         {
-            // Counts (publish, unpublish), days, upcoming list.
-            Assert.That(Count(sql, UpcomingCondition), Is.EqualTo(4));
-            Assert.That(Count(sql, UpcomingEndCondition), Is.EqualTo(4));
+            // Read once into @Events.
+            Assert.That(Count(sql, UpcomingCondition), Is.EqualTo(1));
+            Assert.That(Count(sql, UpcomingEndCondition), Is.EqualTo(1));
             // Past schedules are not listed.
             Assert.That(sql, Does.Not.Contain("EV.[When] <" + " @"));
         });
@@ -73,8 +73,8 @@ public class PublishingCalendarSqlTests
     {
         string sql = PublishingCalendarSql.Build(hasKind: false, hasChannel: false, withSends: false);
 
-        Assert.That(Count(sql, "D.[ContentItemCommonDataIsLatest] = 1"), Is.EqualTo(2));
-        Assert.That(Count(sql, "D.[ContentItemCommonDataLastPublishedWhen] >= " + PublishingCalendarSql.RecentFromParameter), Is.EqualTo(2));
+        Assert.That(Count(sql, "D.[ContentItemCommonDataIsLatest] = 1"), Is.EqualTo(1));
+        Assert.That(Count(sql, "D.[ContentItemCommonDataLastPublishedWhen] >= " + PublishingCalendarSql.RecentFromParameter), Is.EqualTo(1));
     }
 
     [Test]

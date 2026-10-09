@@ -100,66 +100,88 @@ internal static class PublishingCalendarSql
                 {0}
         """;
 
-    // 1. Counts (one row), not limited by @Limit.
-    private const string CountsQuery = """
-        SELECT
-            (SELECT COUNT(*)
-                {0}
-                {2}
-                {1}
-                    {3}
-                    AND EV.[Action] = {8}) AS [UpcomingPublish],
-            (SELECT COUNT(*)
-                {0}
-                {2}
-                {1}
-                    {3}
-                    AND EV.[Action] = {9}) AS [UpcomingUnpublish],
-            (SELECT COUNT(*)
-                {0}
-                {4}
-                {1}
-                    {5}) AS [RecentlyPublished];
+    private const int UpcomingKind = 0;
+    private const int RecentKind = 1;
+
+    // The window's events, read once: upcoming publishes and unpublishes (Kind 0) and recently published variants (Kind 1, [Action] is
+    // Publish and [When] the last publish time). Counts, days and lists read from it; lists join the variant again by its ID for their columns.
+    private const string EventsTable = """
+        DECLARE @Events TABLE (
+            [Kind] tinyint NOT NULL,
+            [MetadataID] int NOT NULL,
+            [Action] int NOT NULL,
+            [When] datetime2(7) NOT NULL);
         """;
 
-    // 2. Upcoming events per day. Days without events are filled with 0 by the report builder.
-    private const string DaysQuery = """
+    // 1. Upcoming events. {0} = variants FROM, {1} = items WHERE, {2} = events source, {3} = window condition.
+    private static readonly string UpcomingInsert = $$"""
+        INSERT INTO @Events
+        SELECT {{UpcomingKind}}, M.[ContentItemLanguageMetadataID], EV.[Action], EV.[When]
+        {0}
+        {2}
+        {1}
+            {3};
+        """;
+
+    // 2. Recently published variants. {0} = variants FROM, {1} = items WHERE, {4} = recent join, {5} = recent condition.
+    private static readonly string RecentInsert = $$"""
+        INSERT INTO @Events
+        SELECT {{RecentKind}}, M.[ContentItemLanguageMetadataID], {{PublishAction}}, D.[ContentItemCommonDataLastPublishedWhen]
+        {0}
+        {4}
+        {1}
+            {5};
+        """;
+
+    // The variant of an event (M), its item (I) and content type (C), like StatsContentSql.VariantsFrom.
+    private const string EventsFrom = """
+        FROM @Events EV
+        INNER JOIN [CMS_ContentItemLanguageMetadata] M ON M.[ContentItemLanguageMetadataID] = EV.[MetadataID]
+        INNER JOIN [CMS_ContentItem] I ON I.[ContentItemID] = M.[ContentItemLanguageMetadataContentItemID]
+        INNER JOIN [CMS_Class] C ON C.[ClassID] = I.[ContentItemContentTypeID]
+        """;
+
+    // 3. Counts (one row), not limited by @Limit.
+    private static readonly string CountsQuery = $$"""
+        SELECT
+            COUNT(CASE WHEN EV.[Kind] = {{UpcomingKind}} AND EV.[Action] = {8} THEN 1 END) AS [UpcomingPublish],
+            COUNT(CASE WHEN EV.[Kind] = {{UpcomingKind}} AND EV.[Action] = {9} THEN 1 END) AS [UpcomingUnpublish],
+            COUNT(CASE WHEN EV.[Kind] = {{RecentKind}} THEN 1 END) AS [RecentlyPublished]
+        FROM @Events EV;
+        """;
+
+    // 4. Upcoming events per day. Days without events are filled with 0 by the report builder.
+    private static readonly string DaysQuery = $$"""
         SELECT
             CAST(EV.[When] AS date) AS [Day],
             SUM(CASE WHEN EV.[Action] = {8} THEN 1 ELSE 0 END) AS [Publish],
             SUM(CASE WHEN EV.[Action] = {9} THEN 1 ELSE 0 END) AS [Unpublish]
-        {0}
-        {2}
-        {1}
-            {3}
+        FROM @Events EV
+        WHERE EV.[Kind] = {{UpcomingKind}}
         GROUP BY CAST(EV.[When] AS date);
         """;
 
-    // 3. Upcoming events, soonest first (publish before unpublish at the same time).
-    private const string UpcomingQuery = """
+    // 5. Upcoming events, soonest first (publish before unpublish at the same time).
+    private static readonly string UpcomingQuery = $$"""
         SELECT TOP (@Limit)
             EV.[When],
             EV.[Action],
             {6}
-        {0}
-        {2}
+        {{EventsFrom}}
         {7}
-        {1}
-            {3}
+        WHERE EV.[Kind] = {{UpcomingKind}}
         ORDER BY EV.[When], M.[ContentItemLanguageMetadataID], EV.[Action];
         """;
 
-    // 4. Recently published variants, newest first.
-    private const string RecentQuery = """
+    // 6. Recently published variants, newest first.
+    private static readonly string RecentQuery = $$"""
         SELECT TOP (@Limit)
-            D.[ContentItemCommonDataLastPublishedWhen] AS [When],
+            EV.[When],
             {6}
-        {0}
-        {4}
+        {{EventsFrom}}
         {7}
-        {1}
-            {5}
-        ORDER BY D.[ContentItemCommonDataLastPublishedWhen] DESC, M.[ContentItemLanguageMetadataID];
+        WHERE EV.[Kind] = {{RecentKind}}
+        ORDER BY EV.[When] DESC, M.[ContentItemLanguageMetadataID];
         """;
 
     private static readonly string sendsAvailabilityCheck = StatsSql.BuildAvailabilityCheck(
@@ -302,7 +324,8 @@ internal static class PublishingCalendarSql
         {
             "SET NOCOUNT ON;",
         };
-        statements.AddRange(new[] { CountsQuery, DaysQuery, UpcomingQuery, RecentQuery }.Select(query => string.Format(null, query, args)));
+        statements.AddRange(new[] { EventsTable, UpcomingInsert, RecentInsert, CountsQuery, DaysQuery, UpcomingQuery, RecentQuery }
+            .Select(query => string.Format(null, query, args)));
 
         if (withSends)
         {
