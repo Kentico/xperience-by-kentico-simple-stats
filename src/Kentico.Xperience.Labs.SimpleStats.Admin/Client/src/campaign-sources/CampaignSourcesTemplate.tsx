@@ -1,5 +1,5 @@
 import { Callout, CalloutPlacementType, CalloutType, InfoCard } from '@kentico/xperience-admin-components';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { noUtmDataMessage, noValueLabel, sentences, shownText, utmCaptureGuideUrl } from '../shared/campaigns';
 import { ComparisonInfoCard } from '../shared/ComparisonInfoCard';
@@ -116,6 +116,15 @@ export const CampaignSourcesTemplate = (props: CampaignSourcesTemplateProps) => 
     props.report,
   );
   const [filter, setFilter] = useState<CampaignSourcesFilter>(() => toFilter(props.report));
+
+  // The server drops a source or content that is not in the options (e.g. none in the new range): show the applied values.
+  useEffect(() => {
+    setFilter((current) =>
+      current.source === report.source && current.content === report.content
+        ? current
+        : { ...current, source: report.source, content: report.content },
+    );
+  }, [report]);
 
   const handleFilterChange = (next: CampaignSourcesFilter) => {
     // A new source has other contents.

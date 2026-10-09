@@ -71,8 +71,9 @@ User decision after Phase 1: build it. Main question (user): **which pages get t
 ### Filters
 
 - `CampaignSourcesFilter { Range (StatsFilter), Source, Content }` (wraps `StatsFilter`, like Publishing activity). Range, grouping, website channel (`ActivityChannelID`; non-website channel dropped).
-- **Source**: all, or one (options: sources with campaign landings in the range, up to 100, plus the selected one). Trimmed, max 200 chars.
-- **Content**: only with a source. `null` = all, `""` = "(none)" (no content), else one value. Options: contents of the source in the range (up to 25) plus the selected one. Changing the source clears the content.
+- **Source**: all, or one (options: sources with campaign landings in the range, up to 100). Trimmed, max 200 chars.
+- **Content**: only with a source. `null` = all, `""` = "(none)" (no content), else one value. Options: contents of the source in the range (up to 25), plus `""` when selected. Changing the source clears the content.
+- Unknown values: the service accepts only a source in the source options and a content in that source's content options (case-insensitive; the stored value is used). Anything else means all, and the result's `Source` / `Content` say what was applied; the client shows them (e.g. a range without landings of the selected source resets the source to all). The options come from the unfiltered and source-only data, which are cached anyway. Reason: source and content are part of the cache key, so free-text values must not add cache entries and queries at will.
 - Client: new shared `TextSelect` (free-text values, also empty) in `filterControls.tsx`.
 
 ### What follows the filter

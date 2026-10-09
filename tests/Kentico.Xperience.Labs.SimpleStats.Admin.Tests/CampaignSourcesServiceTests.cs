@@ -7,6 +7,13 @@ public class CampaignSourcesServiceTests
 {
     private static readonly CampaignSourcesQuery query = new(new(new(2026, 9, 1), new(2026, 9, 30), StatsGrouping.Day, null), null, null);
 
+    // Sources and contents the data knows (the fake returns the same data for every query).
+    private static readonly CampaignSourcesData known = CampaignSourcesData.Empty with
+    {
+        Sources = [new("newsletter", 3, 2, 0), new("google", 1, 1, 0)],
+        Contents = [new("newsletter", "footer", 2, 1), new("newsletter", null, 1, 1)],
+    };
+
     private FakeRepository repository = null!;
     private FakeCache cache = null!;
     private FakeClock clock = null!;
@@ -15,7 +22,7 @@ public class CampaignSourcesServiceTests
     [SetUp]
     public void SetUp()
     {
-        repository = new FakeRepository();
+        repository = new FakeRepository { Data = known };
         cache = new FakeCache();
         clock = new FakeClock(new DateTimeOffset(2026, 9, 30, 10, 0, 0, TimeSpan.Zero));
         service = new CampaignSourcesService(repository, repository, cache, cache, clock);
@@ -30,7 +37,13 @@ public class CampaignSourcesServiceTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(repository.Queries.Single(), Is.EqualTo(filtered));
+            // All sources (the source options), the source (its contents), then the filter.
+            Assert.That(repository.Queries, Is.EqualTo(new[]
+            {
+                filtered with { Source = null, Content = null },
+                filtered with { Content = null },
+                filtered,
+            }));
             Assert.That(result.Source, Is.EqualTo("newsletter"));
             Assert.That(result.Content, Is.EqualTo("footer"));
             Assert.That(result.ChannelId, Is.EqualTo(2));
@@ -49,6 +62,69 @@ public class CampaignSourcesServiceTests
         await service.GetReport(query with { Source = "newsletter", Content = "footer" }, refresh: false, CancellationToken.None);
 
         Assert.That(repository.Queries, Has.Count.EqualTo(4));
+    }
+
+    [Test]
+    public async Task GetReport_KnownValues_MatchCaseInsensitively_UseStoredValue()
+    {
+        var result = await service.GetReport(query with { Source = "NEWSLETTER", Content = "Footer" }, refresh: false, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(repository.Queries[^1], Is.EqualTo(query with { Source = "newsletter", Content = "footer" }));
+            Assert.That(result.Source, Is.EqualTo("newsletter"));
+            Assert.That(result.Content, Is.EqualTo("footer"));
+        });
+    }
+
+    [Test]
+    public async Task GetReport_UnknownSource_MeansAll_AndAddsNoCacheEntry()
+    {
+        await service.GetReport(query, refresh: false, CancellationToken.None);
+        int entries = cache.Count;
+
+        var result = await service.GetReport(query with { Source = "random-1", Content = "x" }, refresh: false, CancellationToken.None);
+        await service.GetReport(query with { Source = "random-2" }, refresh: false, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(repository.Queries, Is.EqualTo(new[] { query }));
+            Assert.That(cache.Count, Is.EqualTo(entries));
+            Assert.That(result.Source, Is.Null);
+            Assert.That(result.Content, Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task GetReport_UnknownContent_MeansAllContents_AndAddsNoCacheEntry()
+    {
+        await service.GetReport(query with { Source = "newsletter" }, refresh: false, CancellationToken.None);
+        int entries = cache.Count;
+
+        var result = await service.GetReport(query with { Source = "newsletter", Content = "random" }, refresh: false, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(repository.Queries, Has.Count.EqualTo(2));
+            Assert.That(repository.Queries.Select(q => q.Content), Has.None.EqualTo("random"));
+            Assert.That(cache.Count, Is.EqualTo(entries));
+            Assert.That(result.Source, Is.EqualTo("newsletter"));
+            Assert.That(result.Content, Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task GetReport_NoContent_IsKept()
+    {
+        repository.Data = known with { Contents = [new("newsletter", "footer", 2, 1)] };
+
+        var result = await service.GetReport(query with { Source = "newsletter", Content = string.Empty }, refresh: false, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(repository.Queries[^1].Content, Is.Empty);
+            Assert.That(result.Content, Is.Empty);
+        });
     }
 
     [Test]

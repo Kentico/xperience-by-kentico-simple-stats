@@ -63,6 +63,14 @@ internal sealed class ContactStatsService(
         var query = (filter ?? new ContactStatsFilter()).Normalize(today, info);
         var range = query.Range;
 
+        // The taxonomy is part of the cache key, so only existing taxonomies are used (an unknown ID means all) and a request
+        // cannot add entries at will. All taxonomies, not only the options of the range: a selected taxonomy stays selected when
+        // the range has none of its tags (the options add it).
+        if (query.TaxonomyId is int taxonomyId && !(await GetTaxonomyIds(refresh, cancellationToken)).Contains(taxonomyId))
+        {
+            query = query with { TaxonomyId = null };
+        }
+
         // All time has no previous period: the batch then reads the range only.
         var previousFrom = query.AllTime ? range.From : StatsComparison.GetPreviousRange(range).From;
 
@@ -155,6 +163,15 @@ internal sealed class ContactStatsService(
             StatsCache.CreateSettings("contact-stats-info", contactId),
             refresh,
             token => repository.GetInfo(contactId, token),
+            cancellationToken);
+
+    // Site-wide: taxonomies change rarely.
+    private Task<IReadOnlyList<int>> GetTaxonomyIds(bool refresh, CancellationToken cancellationToken) =>
+        cache.LoadAsync(
+            cacheInvalidator,
+            StatsCache.CreateSettings("contact-stats-taxonomies"),
+            refresh,
+            repository.GetTaxonomyIds,
             cancellationToken);
 
     /// <summary>

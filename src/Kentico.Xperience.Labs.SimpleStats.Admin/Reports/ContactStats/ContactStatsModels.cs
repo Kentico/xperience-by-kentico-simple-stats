@@ -32,7 +32,7 @@ public sealed record ContactStatsFilter
     public IReadOnlyList<string>? ActivityTypes { get; init; }
 
     /// <summary>
-    /// Taxonomy of the tag interests. <c>null</c> or a value &lt;= 0 means all taxonomies.
+    /// Taxonomy of the tag interests. <c>null</c> or a value &lt;= 0 means all taxonomies. The service also treats a taxonomy that does not exist as all.
     /// </summary>
     public int? TaxonomyId { get; init; }
 

@@ -13,6 +13,9 @@ internal sealed class FakeCache : IProgressiveCache, IStatsCacheInvalidator
 
     public List<CacheSettings> Settings { get; } = [];
 
+    /// <summary>Cached items.</summary>
+    public int Count => items.Count;
+
     public TData Load<TData>(Func<CacheSettings, TData> loadDataFunc, CacheSettings settings) =>
         throw new NotSupportedException();
 

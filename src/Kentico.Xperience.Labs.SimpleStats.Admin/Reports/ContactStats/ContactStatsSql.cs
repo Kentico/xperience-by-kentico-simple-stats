@@ -288,6 +288,11 @@ internal static class ContactStatsSql
         ORDER BY COUNT(*) DESC, G.[TagTitle], G.[TagID];
         """;
 
+    /// <summary>
+    /// IDs of all taxonomies (to check the taxonomy filter).
+    /// </summary>
+    public const string TaxonomyIdsQuery = "SELECT X.[TaxonomyID] FROM [CMS_Taxonomy] X;";
+
     public const string PublishedStatusParameter = "@PublishedStatus";
     public const string TaxonomyParameter = "@TaxonomyID";
 }

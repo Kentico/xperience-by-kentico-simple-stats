@@ -337,6 +337,27 @@ public class ContactStatsTests
     }
 
     [Test]
+    public async Task GetReport_UnknownTaxonomy_MeansAll_AndAddsNoCacheEntry()
+    {
+        var all = await service.GetReport(ContactId, null, today, refresh: false, CancellationToken.None);
+        int entries = cache.Count;
+
+        var unknown = await service.GetReport(ContactId, new ContactStatsFilter { TaxonomyId = 999 }, today, refresh: false, CancellationToken.None);
+        await service.GetReport(ContactId, new ContactStatsFilter { TaxonomyId = 998 }, today, refresh: false, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(unknown.TaxonomyId, Is.Null);
+            Assert.That(repository.DataCalls, Is.EqualTo(1));
+            Assert.That(repository.LastTaxonomyId, Is.Null);
+            // Only the site-wide taxonomy list is added, once.
+            Assert.That(cache.Count, Is.EqualTo(entries + 1));
+            Assert.That(repository.TaxonomyCalls, Is.EqualTo(1));
+            Assert.That(all.TaxonomyId, Is.Null);
+        });
+    }
+
+    [Test]
     public void Build_Tags_RankedWithTaxonomy_AndTopInterestUsesTag()
     {
         var data = ContactStatsData.Empty with
@@ -613,6 +634,16 @@ public class ContactStatsTests
             HeatmapCalls++;
             LastTypes = activityTypes;
             return Task.FromResult(Heatmap);
+        }
+
+        public IReadOnlyList<int> TaxonomyIds { get; set; } = [3];
+
+        public int TaxonomyCalls { get; private set; }
+
+        public Task<IReadOnlyList<int>> GetTaxonomyIds(CancellationToken cancellationToken)
+        {
+            TaxonomyCalls++;
+            return Task.FromResult(TaxonomyIds);
         }
 
         public Task<IReadOnlyList<ActivityDailyCount>> GetDailyCounts(DateOnly from, DateOnly to, int? channelId, CancellationToken cancellationToken) =>

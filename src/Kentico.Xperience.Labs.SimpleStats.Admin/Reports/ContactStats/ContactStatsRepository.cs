@@ -29,6 +29,11 @@ internal interface IContactStatsRepository
     /// Returns activity counts by weekday and hour in the range for the types. Only non-zero cells.
     /// </summary>
     public Task<IReadOnlyList<ContactHeatmapCell>> GetHeatmap(int contactId, DateOnly from, DateOnly to, IReadOnlyList<string> activityTypes, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns the IDs of all taxonomies.
+    /// </summary>
+    public Task<IReadOnlyList<int>> GetTaxonomyIds(CancellationToken cancellationToken);
 }
 
 internal sealed class ContactStatsRepository : IContactStatsRepository
@@ -188,6 +193,19 @@ internal sealed class ContactStatsRepository : IContactStatsRepository
         }
 
         return cells;
+    }
+
+    public async Task<IReadOnlyList<int>> GetTaxonomyIds(CancellationToken cancellationToken)
+    {
+        await using var reader = await ConnectionHelper.ExecuteReaderAsync(ContactStatsSql.TaxonomyIdsQuery, [], QueryTypeEnum.SQLQuery, CommandBehavior.Default, cancellationToken);
+
+        var ids = new List<int>();
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            ids.Add(reader.GetInt32(0));
+        }
+
+        return ids;
     }
 
     /// <summary>
