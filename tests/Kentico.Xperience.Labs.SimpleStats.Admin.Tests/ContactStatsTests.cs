@@ -74,8 +74,33 @@ public class ContactStatsTests
     }
 
     [Test]
-    public void Normalize_OnlyUnknownTypes_MeansAll() =>
-        Assert.That(new ContactStatsFilter { ActivityTypes = ["nope"] }.Normalize(today, info).ActivityTypes, Is.Empty);
+    public void Normalize_OnlyUnknownTypes_AreKeptNotAll()
+    {
+        var query = new ContactStatsFilter { ActivityTypes = ["Nope", "nope", " other ", "a|pagevisit"] }.Normalize(today, info);
+
+        Assert.That(query.ActivityTypes, Is.EqualTo(new[] { "a_pagevisit", "Nope", "other" }));
+    }
+
+    [Test]
+    public void Normalize_KnownType_KeepsStoredCasing() =>
+        Assert.That(new ContactStatsFilter { ActivityTypes = ["PAGEVISIT"] }.Normalize(today, info).ActivityTypes, Is.EqualTo(new[] { "pagevisit" }));
+
+    [Test]
+    public void Normalize_UnknownTypes_AreBounded()
+    {
+        var many = Enumerable.Range(0, 50).Select(i => $"x{i:00}").Append(new string('y', 500)).ToList();
+
+        var query = new ContactStatsFilter { ActivityTypes = many }.Normalize(today, info);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(query.ActivityTypes, Has.Count.EqualTo(ContactStatsFilter.MaxTypes));
+            Assert.That(query.ActivityTypes.Max(t => t.Length), Is.LessThanOrEqualTo(ContactStatsFilter.MaxTypeLength));
+            Assert.That(
+                new ContactStatsFilter { ActivityTypes = [new string('y', 500)] }.Normalize(today, info).ActivityTypes.Single(),
+                Has.Length.EqualTo(ContactStatsFilter.MaxTypeLength));
+        });
+    }
 
     [Test]
     public async Task GetReport_TypeOrder_SharesCacheEntry()

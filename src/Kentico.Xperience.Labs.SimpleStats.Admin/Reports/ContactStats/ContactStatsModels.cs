@@ -19,8 +19,15 @@ public sealed record ContactStatsFilter
     /// </summary>
     public bool AllTime { get; init; } = true;
 
+    /// <summary>Most activity types taken from a request.</summary>
+    public const int MaxTypes = 20;
+
+    /// <summary>Longest activity type taken from a request.</summary>
+    public const int MaxTypeLength = 100;
+
     /// <summary>
-    /// Activity type code names. <c>null</c> or empty means all types. Types the contact does not have are ignored.
+    /// Activity type code names. <c>null</c> or empty means all types. Types the contact does not have are ignored,
+    /// unless none is known: then they are kept (the result is empty), not replaced by all types.
     /// </summary>
     public IReadOnlyList<string>? ActivityTypes { get; init; }
 
@@ -48,15 +55,28 @@ public sealed record ContactStatsFilter
             range = (Range ?? new StatsFilter()).Normalize(today) with { Grouping = grouping };
         }
 
-        var known = info.Types.Select(t => t.ActivityType).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var types = (ActivityTypes ?? [])
+        // Bounded so the cache key stays bounded. "|" is the delimiter of the type list parameter, so it is replaced and cannot match another type
+        var requested = (ActivityTypes ?? [])
             .Where(t => !string.IsNullOrWhiteSpace(t))
-            .Select(t => info.Types.FirstOrDefault(k => string.Equals(k.ActivityType, t.Trim(), StringComparison.OrdinalIgnoreCase))?.ActivityType)
+            .Select(t => t.Trim().Replace('|', '_'))
+            .Select(t => t.Length > MaxTypeLength ? t[..MaxTypeLength] : t)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .Take(MaxTypes)
+            .ToList();
+
+        var types = requested
+            .Select(t => info.Types.FirstOrDefault(k => string.Equals(k.ActivityType, t, StringComparison.OrdinalIgnoreCase))?.ActivityType)
             .OfType<string>()
-            .Where(known.Contains)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        // None of the requested types is known (stale cache or old client): keep them, so the query returns no rows, not all types
+        if (types.Count == 0)
+        {
+            types = requested;
+        }
 
         return new(range with { ChannelId = null }, AllTime, types)
         {
@@ -70,7 +90,7 @@ public sealed record ContactStatsFilter
 /// </summary>
 /// <param name="Range">Range and grouping (no channel).</param>
 /// <param name="AllTime">The range is "All time": no previous period comparison.</param>
-/// <param name="ActivityTypes">Selected activity types, sorted (case-insensitive), only types of the contact. Empty means all.</param>
+/// <param name="ActivityTypes">Selected activity types, sorted (case-insensitive), types of the contact (or the requested ones when none is known). Empty means all.</param>
 public sealed record ContactStatsQuery(StatsQuery Range, bool AllTime, IReadOnlyList<string> ActivityTypes)
 {
     /// <summary>

@@ -32,7 +32,7 @@ Audience: marketers looking at one contact. Answers "how engaged is this contact
 
 1. **Page** `ContactStatsPage` (parent `ContactEditSection`, order 1001, name "Stats (Labs)", slug e.g. `simple-stats`), template `@kentico/xperience-admin-labs-simple-stats/ContactStats`. Use the same page-extender approach as `WebPageStatsNavigationExtender` to hide the tab without the permission.
 2. **Filter**: range (with All time) + grouping + **activity types** (multi-select; empty = all types). No channel filter (one contact).
-   - Type options: the activity types this contact has (any date), with display names from `OM_ActivityType`. Unknown types in the request are ignored.
+   - Type options: the activity types this contact has (any date), with display names from `OM_ActivityType`. Unknown types in the request are ignored, unless none is known: then the request's types are kept (trimmed, `|` replaced, distinct, sorted, max 20 types of 100 chars) so the result is empty, not all types (code review fix 5, option A).
    - Pass the selected types as a parameterized list (table-valued parameter, `STRING_SPLIT` on a parameter, or one parameter per type, whichever the repo's SQL helpers already support; no string concatenation of values).
    - The type filter applies to every query (totals, series, pages, forms, emails, campaigns, interests, heatmap, insights). Sorted type codes are part of the cache key, so `[a,b]` and `[b,a]` share an entry.
    - KPIs/tiles that cannot apply to the selected types (e.g. "Forms submitted" when form submissions are not selected) show the tile's empty message, not a hidden tile, so the layout stays stable.
@@ -52,7 +52,7 @@ Audience: marketers looking at one contact. Answers "how engaged is this contact
    - "Came from <source> in N of M sessions" (with UTM data).
    - "Submitted <form> N times" (latest form).
 5. **Result** (suggested): `ContactStatsResult { ContactId, From, To, Grouping, Totals, Comparison, Series, TopPages, Forms, Emails, Campaigns, Interests, Insights, UpdatedAt }`.
-6. **Service**: interface + `StatsCache`, keyed by contact and filter. Tests: contact with no activities (empty state); All time range; deleted form / email (fallback label); activities in another channel; previous-period comparison; insight rules (each line on and off); permission flag; type filter (one type, several, unknown type ignored, cache key order-independent); heatmap command (separate query, same filter, not run by `LOAD`). Heatmap result (suggested): `ContactHeatmapResult { Cells (weekday, hour, count), Max, UpdatedAt }`.
+6. **Service**: interface + `StatsCache`, keyed by contact and filter. Tests: contact with no activities (empty state); All time range; deleted form / email (fallback label); activities in another channel; previous-period comparison; insight rules (each line on and off); permission flag; type filter (one type, several, unknown type ignored, only unknown types give an empty result not all types, cache key order-independent); heatmap command (separate query, same filter, not run by `LOAD`). Heatmap result (suggested): `ContactHeatmapResult { Cells (weekday, hour, count), Max, UpdatedAt }`.
 
 ### Client
 
