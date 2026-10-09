@@ -23,6 +23,7 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 [UIPermission(SystemPermissions.VIEW)]
 [UIPermission(StatsPermissions.ACTIVITY_COUNTS, StatsPermissions.ACTIVITY_COUNTS_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.TOP_PAGES, StatsPermissions.TOP_PAGES_DISPLAY_NAME)]
+[UIPermission(StatsPermissions.CAMPAIGN_SOURCES, StatsPermissions.CAMPAIGN_SOURCES_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.NEW_CONTACTS, StatsPermissions.NEW_CONTACTS_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.FORM_SUBMISSIONS, StatsPermissions.FORM_SUBMISSIONS_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.CONTENT_INVENTORY, StatsPermissions.CONTENT_INVENTORY_DISPLAY_NAME)]

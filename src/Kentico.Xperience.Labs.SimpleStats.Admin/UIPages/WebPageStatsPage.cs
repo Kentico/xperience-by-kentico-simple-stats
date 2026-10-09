@@ -14,7 +14,7 @@ using Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
     uiPageType: typeof(WebPageStatsPage),
     parentType: typeof(WebPageLayout),
     slug: WebPageStatsPage.SLUG,
-    name: "Stats",
+    name: WebPageStatsPage.NAME,
     templateName: WebPageStatsPage.TEMPLATE_NAME,
     order: WebPageStatsPage.ORDER,
     Icon = Icons.Graph)]
@@ -24,7 +24,8 @@ using Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 
 /// <summary>
-/// "Stats" tab of a web page: contact activities logged for the page variant (language) being edited.
+/// "Stats (Labs)" tab of a web page: contact activities logged for the page variant (language) being edited,
+/// and the campaign sources (UTM values) of its landings.
 /// Shows aggregates only (counts and distinct contact counts), never contact details.
 /// Requires <see cref="StatsPermissions.WEB_PAGE_STATS"/> in the "Simple Stats (Labs)" application, on top of the
 /// website channel permissions that already guard <see cref="WebPageLayout"/>.
@@ -41,6 +42,12 @@ internal sealed class WebPageStatsPage(
     TimeProvider clock) : Page<WebPageStatsClientProperties>
 {
     public const string SLUG = "simple-stats";
+
+    /// <summary>
+    /// Tab name. "(Labs)" tells editors the tab comes from this Labs extension, not the product.
+    /// </summary>
+    public const string NAME = "Stats (Labs)";
+
     public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/WebPageStats";
 
     /// <summary>
@@ -237,7 +244,7 @@ internal sealed class WebPageStatsClientProperties : StatsReportClientProperties
 }
 
 /// <summary>
-/// Hides the "Stats" tab on the website channel root (no web page behind it) and for users without
+/// Hides the "Stats (Labs)" tab on the website channel root (no web page behind it) and for users without
 /// <see cref="StatsPermissions.WEB_PAGE_STATS"/>. Only the navigation entry is removed; the page itself checks the permission too.
 /// </summary>
 internal sealed class WebPageStatsNavigationExtender(IStatsApplicationPermissionEvaluator statsPermissionEvaluator) : PageExtender<WebPageLayout>

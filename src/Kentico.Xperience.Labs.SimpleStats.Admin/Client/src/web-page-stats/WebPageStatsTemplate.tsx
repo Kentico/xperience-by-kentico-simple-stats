@@ -11,6 +11,7 @@ import { TimeSeriesTable } from '../shared/TimeSeriesTable';
 import { StatsFilter, StatsGrouping, StatsPeriod, StatsSeries } from '../shared/types';
 import { useCsvExport } from '../shared/useCsvExport';
 import { useStatsCommand } from '../shared/useStatsCommand';
+import { CampaignSources, WebPageCampaignsResult } from './CampaignSources';
 import '../shared/stats.css';
 
 /** Mirrors `StatsTimeSeries`. */
@@ -40,6 +41,8 @@ interface WebPageStatsResult {
   readonly formUrlHosts: readonly string[];
   /** The page's channel uses language-specific domains. */
   readonly usesLanguageDomains: boolean;
+  /** Landings of the page and their UTM sources. */
+  readonly campaigns: WebPageCampaignsResult;
   /** ISO timestamp of when the counts were read from the database. */
   readonly updatedAt: string;
 }
@@ -167,6 +170,15 @@ export const WebPageStatsTemplate = (props: WebPageStatsTemplateProps) => {
         renderTable={() => (
           <TimeSeriesTable grouping={report.grouping} periods={report.periods} series={chartSeries} />
         )}
+      />
+
+      <CampaignSources
+        campaigns={report.campaigns}
+        from={report.from}
+        to={report.to}
+        isLoading={isLoading}
+        hasError={hasError}
+        saveCsv={saveCsv}
       />
 
       <DataRetentionNote />

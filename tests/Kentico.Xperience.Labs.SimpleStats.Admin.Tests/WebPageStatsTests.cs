@@ -25,7 +25,7 @@ public class WebPageStatsTests
         repository = new FakeRepository();
         cache = new FakeCache();
         clock = new FakeClock(new DateTimeOffset(2026, 9, 7, 10, 0, 0, TimeSpan.Zero));
-        service = new WebPageStatsService(repository, repository, cache, cache, clock);
+        service = new WebPageStatsService(repository, repository, repository, cache, cache, clock);
     }
 
     [Test]
@@ -42,7 +42,7 @@ public class WebPageStatsTests
             UniqueVisitors: 3,
             UniqueSubmitters: 1);
 
-        var result = WebPageStatsReportBuilder.Build(query, data, new Dictionary<string, string> { ["pagevisit"] = "Page visit" }, target);
+        var result = WebPageStatsReportBuilder.Build(query, data, new Dictionary<string, string> { ["pagevisit"] = "Page visit" }, target, hasAnyUtmData: false);
 
         Assert.Multiple(() =>
         {
@@ -61,7 +61,7 @@ public class WebPageStatsTests
     [Test]
     public void Build_NoData_ReturnsZeroFilledEmptyReport()
     {
-        var result = WebPageStatsReportBuilder.Build(query, WebPageStatsData.Empty, new Dictionary<string, string>(), target with { FormUrlPath = null });
+        var result = WebPageStatsReportBuilder.Build(query, WebPageStatsData.Empty, new Dictionary<string, string>(), target with { FormUrlPath = null }, hasAnyUtmData: false);
 
         Assert.Multiple(() =>
         {
@@ -175,7 +175,7 @@ public class WebPageStatsTests
     {
         var languageDomainTarget = target with { FormUrlHosts = ["fr.example.com"], UsesLanguageDomains = true };
 
-        var result = WebPageStatsReportBuilder.Build(query, WebPageStatsData.Empty, new Dictionary<string, string>(), languageDomainTarget);
+        var result = WebPageStatsReportBuilder.Build(query, WebPageStatsData.Empty, new Dictionary<string, string>(), languageDomainTarget, hasAnyUtmData: false);
 
         Assert.Multiple(() =>
         {
@@ -211,11 +211,178 @@ public class WebPageStatsTests
         });
     }
 
-    private sealed class FakeRepository : IWebPageStatsRepository, IActivityCountsRepository
+    [Test]
+    public void Page_IsNamedStatsLabs_KeepsSlug()
+    {
+        var registration = typeof(WebPageStatsPage).Assembly
+            .GetCustomAttributes(typeof(UIPageAttribute), false)
+            .Cast<UIPageAttribute>()
+            .Single(a => a.Type == typeof(WebPageStatsPage));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(registration.Name, Is.EqualTo("Stats (Labs)"));
+            Assert.That(registration.Slug, Is.EqualTo("simple-stats"));
+        });
+    }
+
+    [Test]
+    public void Build_Campaigns_NoLandings_ShareIsNull()
+    {
+        var result = WebPageStatsReportBuilder.Build(query, WebPageStatsData.Empty, new Dictionary<string, string>(), target, hasAnyUtmData: false);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Campaigns.Landings, Is.Zero);
+            Assert.That(result.Campaigns.CampaignLandings, Is.Zero);
+            Assert.That(result.Campaigns.CampaignShare, Is.Null);
+            Assert.That(result.Campaigns.BySource.Items, Is.Empty);
+            Assert.That(result.Campaigns.BySourceContent.Items, Is.Empty);
+            Assert.That(result.Campaigns.HasAnyUtmData, Is.False);
+        });
+    }
+
+    [Test]
+    public void Build_Campaigns_LandingsWithoutUtm_ShareIsZero()
+    {
+        var data = WebPageStatsData.Empty with { Campaigns = new(5, 0, 0, 0, [], 0, []) };
+
+        var result = WebPageStatsReportBuilder.Build(query, data, new Dictionary<string, string>(), target, hasAnyUtmData: true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Campaigns.Landings, Is.EqualTo(5));
+            Assert.That(result.Campaigns.CampaignShare, Is.Zero);
+            Assert.That(result.Campaigns.BySource.Items, Is.Empty);
+            Assert.That(result.Campaigns.HasAnyUtmData, Is.True);
+        });
+    }
+
+    [Test]
+    public void Build_Campaigns_RanksSourcesAndContents()
+    {
+        var data = WebPageStatsData.Empty with
+        {
+            Campaigns = new(
+                Landings: 10,
+                CampaignLandings: 8,
+                CampaignVisitors: 6,
+                SourceCount: 3,
+                [new("linkedin", 2, 2), new("newsletter", 5, 3), new("google", 1, 1)],
+                SourceContentCount: 4,
+                [new("newsletter", "hero-banner", 3), new("newsletter", "footer", 2), new("linkedin", null, 2), new("google", null, 1)]),
+        };
+
+        var result = WebPageStatsReportBuilder.Build(query with { ChannelId = 3 }, data, new Dictionary<string, string>(), target, hasAnyUtmData: false);
+        var campaigns = result.Campaigns;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(campaigns.CampaignShare, Is.EqualTo(0.8).Within(1e-9));
+            Assert.That(campaigns.CampaignVisitors, Is.EqualTo(6));
+            Assert.That(campaigns.BySource.Items.Select(i => i.Label), Is.EqualTo(new[] { "newsletter", "linkedin", "google" }));
+            Assert.That(campaigns.BySource.Items[0].SecondaryValue, Is.EqualTo(3));
+            Assert.That(campaigns.BySource.Items[0].Share, Is.EqualTo(5 / 8d).Within(1e-9));
+            Assert.That(campaigns.BySource.Total, Is.EqualTo(8));
+            Assert.That(campaigns.BySource.ItemCount, Is.EqualTo(3));
+            Assert.That(campaigns.BySource.ChannelId, Is.Null);
+            Assert.That(campaigns.BySourceContent.Items.Select(i => (i.Label, i.SecondaryLabel, i.Value)), Is.EqualTo(new[]
+            {
+                ("newsletter", "hero-banner", 3m),
+                ("linkedin", "(none)", 2m),
+                ("newsletter", "footer", 2m),
+                ("google", "(none)", 1m),
+            }));
+            Assert.That(campaigns.BySourceContent.Items.Select(i => i.Key), Is.Unique);
+            Assert.That(campaigns.BySourceContent.ItemCount, Is.EqualTo(4));
+            // Campaign landings on the page prove UTM data exists.
+            Assert.That(campaigns.HasAnyUtmData, Is.True);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task GetReport_NoCampaignLandings_ChecksSiteForUtmData(bool hasAnyUtmData)
+    {
+        repository.HasUtmData = hasAnyUtmData;
+
+        var result = await service.GetReport(target, query, refresh: false, CancellationToken.None);
+        await service.GetReport(target with { LanguageId = 2 }, query, refresh: false, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Campaigns.HasAnyUtmData, Is.EqualTo(hasAnyUtmData));
+            // One site-wide cache item.
+            Assert.That(repository.UtmDataCalls, Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public async Task GetReport_WithCampaignLandings_SkipsUtmDataCheck()
+    {
+        repository.Data = WebPageStatsData.Empty with { Campaigns = new(1, 1, 1, 1, [new("newsletter", 1, 1)], 1, [new("newsletter", "hero-banner", 1)]) };
+
+        var result = await service.GetReport(target, query, refresh: false, CancellationToken.None);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Campaigns.HasAnyUtmData, Is.True);
+            Assert.That(repository.UtmDataCalls, Is.Zero);
+        });
+    }
+
+    [Test]
+    public void CampaignQuery_MatchesLandingsOfVariantInRange()
+    {
+        string sql = WebPageStatsRepository.CampaignQuery;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sql, Does.Contain("A.[ActivityWebPageItemGUID] = @WebPageItemGUID"));
+            // Other languages of the page are not counted.
+            Assert.That(sql, Does.Contain("A.[ActivityLanguageID] = @LanguageID"));
+            Assert.That(sql, Does.Contain("A.[ActivityType] = @LandingPageType"));
+            // Same half-open range as the activity query: whole first day, whole last day.
+            Assert.That(sql, Does.Contain("A.[ActivityCreated] >= @From"));
+            Assert.That(sql, Does.Contain("A.[ActivityCreated] < @ToExclusive"));
+            Assert.That(sql, Does.Contain("NULLIF(LTRIM(RTRIM(A.[ActivityUTMSource])), N'')"));
+            Assert.That(sql, Does.Contain("TOP (@SourceLimit)"));
+            Assert.That(sql, Does.Contain("TOP (@SourceContentLimit)"));
+        });
+    }
+
+    [Test]
+    public void CampaignQuery_ReturnsOnlyAggregatesOfContacts()
+    {
+        // Contact IDs are copied into the table variable; the result sets may use them only inside COUNT(DISTINCT ...).
+        string sql = WebPageStatsRepository.CampaignQuery;
+        string selects = sql[(sql.IndexOf(';', sql.IndexOf("INSERT INTO @Landings", StringComparison.Ordinal)) + 1)..];
+        int references = Regex.Matches(selects, @"\[ContactID\]").Count;
+        int aggregated = Regex.Matches(selects, @"COUNT\(DISTINCT (CASE WHEN [^)]*THEN )?L\.\[ContactID\]").Count;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(references, Is.EqualTo(2));
+            Assert.That(aggregated, Is.EqualTo(references));
+            Assert.That(selects, Does.Not.Contain("ActivityContactID"));
+        });
+    }
+
+    private sealed class FakeRepository : IWebPageStatsRepository, IActivityCountsRepository, IStatsUtmDataRepository
     {
         public WebPageStatsData Data { get; set; } = WebPageStatsData.Empty;
 
+        public bool HasUtmData { get; set; }
+
+        public int UtmDataCalls { get; private set; }
+
         public int Calls { get; private set; }
+
+        public Task<bool> HasAnyUtmData(CancellationToken cancellationToken)
+        {
+            UtmDataCalls++;
+            return Task.FromResult(HasUtmData);
+        }
 
         public (WebPageStatsTarget Target, DateOnly From, DateOnly To)? LastCall { get; private set; }
 

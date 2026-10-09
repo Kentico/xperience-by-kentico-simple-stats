@@ -1,5 +1,6 @@
 // Exposes components from the module. All added components need to be exported.
 import { ActivityCountsTemplate as ActivityCounts } from './activity-counts/ActivityCountsTemplate';
+import { CampaignSourcesTemplate as CampaignSources } from './campaign-sources/CampaignSourcesTemplate';
 import { ConsentsTemplate as Consents } from './consents/ConsentsTemplate';
 import { ContentInventoryTemplate as ContentInventory } from './content-inventory/ContentInventoryTemplate';
 import { ContentLocksTemplate as ContentLocks } from './content-locks/ContentLocksTemplate';
@@ -25,6 +26,7 @@ import { WebPageStatsTemplate as WebPageStats } from './web-page-stats/WebPageSt
 // Report templates get the Export permission (`canExport`) for their "Export CSV" buttons.
 export const ActivityCountsTemplate = withExportPermission(ActivityCounts);
 export const TopPagesTemplate = withExportPermission(TopPages);
+export const CampaignSourcesTemplate = withExportPermission(CampaignSources);
 export const NewContactsTemplate = withExportPermission(NewContacts);
 export const FormSubmissionsTemplate = withExportPermission(FormSubmissions);
 export const ContentInventoryTemplate = withExportPermission(ContentInventory);

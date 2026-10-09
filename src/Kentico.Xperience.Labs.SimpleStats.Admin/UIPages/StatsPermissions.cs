@@ -14,6 +14,9 @@ public static class StatsPermissions
     public const string TOP_PAGES = PREFIX + "TopPages";
     public const string TOP_PAGES_DISPLAY_NAME = "Top pages";
 
+    public const string CAMPAIGN_SOURCES = PREFIX + "CampaignSources";
+    public const string CAMPAIGN_SOURCES_DISPLAY_NAME = "Campaign sources";
+
     public const string NEW_CONTACTS = PREFIX + "NewContacts";
     public const string NEW_CONTACTS_DISPLAY_NAME = "New contacts";
 
@@ -69,7 +72,7 @@ public static class StatsPermissions
     public const string RECIPIENT_LISTS_DISPLAY_NAME = "Recipient lists";
 
     /// <summary>
-    /// Shows the "Stats" tab of web pages in website channels. Not tied to a page of this application.
+    /// Shows the "Stats (Labs)" tab of web pages in website channels. Not tied to a page of this application.
     /// </summary>
     public const string WEB_PAGE_STATS = PREFIX + "WebPageStats";
     public const string WEB_PAGE_STATS_DISPLAY_NAME = "Web page stats";

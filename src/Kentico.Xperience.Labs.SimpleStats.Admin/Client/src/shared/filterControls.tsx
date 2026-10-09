@@ -95,6 +95,48 @@ export const IdSelect = ({ label, allLabel, options, value, onChange }: IdSelect
   );
 };
 
+/** Option of a `TextSelect`. */
+export interface TextSelectOption {
+  /** Any text, also empty. */
+  readonly value: string;
+  readonly label: string;
+}
+
+export interface TextSelectProps {
+  /** Label above the select, for example "Source". */
+  readonly label: string;
+  /** Label of the option that clears the value, for example "All sources". */
+  readonly allLabel: string;
+  readonly options: readonly TextSelectOption[];
+  /** Selected value, `null` for all. */
+  readonly value: string | null;
+  readonly onChange: (value: string | null) => void;
+}
+
+/** Prefix of option values, so any text (also an empty string) is told apart from the "all" option. */
+const textOptionPrefix = 'v:';
+
+/**
+ * Filter bar item with a select of text options plus an "all" option (for example UTM sources from project data).
+ * Like `IdSelect`, for values that are free text instead of IDs.
+ */
+export const TextSelect = ({ label, allLabel, options, value, onChange }: TextSelectProps) => {
+  const handleChange = (selected?: string) => {
+    onChange(selected?.startsWith(textOptionPrefix) ? selected.slice(textOptionPrefix.length) : null);
+  };
+
+  return (
+    <div className="SimpleStats-filterItem SimpleStats-filterItem--channel">
+      <Select label={label} value={value === null ? allIdValue : textOptionPrefix + value} onChange={handleChange}>
+        <MenuItem primaryLabel={allLabel} value={allIdValue} />
+        {options.map((option) => (
+          <MenuItem key={option.value} primaryLabel={option.label} value={textOptionPrefix + option.value} />
+        ))}
+      </Select>
+    </div>
+  );
+};
+
 /** Toggle item id that stands for "all" (`null` value). */
 export const allOptionId = 'all';
 

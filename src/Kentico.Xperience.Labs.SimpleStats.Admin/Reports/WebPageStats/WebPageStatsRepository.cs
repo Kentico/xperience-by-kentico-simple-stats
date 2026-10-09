@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 
 using CMS.Activities;
 using CMS.DataEngine;
@@ -72,6 +73,56 @@ internal sealed class WebPageStatsRepository : IWebPageStatsRepository
         GROUP BY GROUPING SETS ((A.[ActivityType], CAST(A.[ActivityCreated] AS date)), ());
         """;
 
+    // Campaign sources: landing page activities of the variant (same page, language and range match as above) with their
+    // UTM values, trimmed, empty as NULL. Contact IDs stay in the table variable; the result sets have aggregates only.
+    // Result sets: totals (one row), top sources, top source + content pairs (with the number of all pairs).
+    internal const string CampaignQuery = $$"""
+        DECLARE @Landings TABLE ([ContactID] int NULL, [Source] nvarchar(200) NULL, [Content] nvarchar(200) NULL);
+
+        INSERT INTO @Landings ([ContactID], [Source], [Content])
+        SELECT
+            A.[ActivityContactID],
+            {{StatsUtm.SourceColumn}},
+            {{StatsUtm.ContentColumn}}
+        FROM [OM_Activity] A
+        WHERE A.[ActivityWebPageItemGUID] = @WebPageItemGUID
+            AND A.[ActivityLanguageID] = @LanguageID
+            AND A.[ActivityType] = @LandingPageType
+            AND A.[ActivityCreated] >= @From
+            AND A.[ActivityCreated] < @ToExclusive;
+
+        SELECT
+            COUNT(*) AS [Landings],
+            COUNT(L.[Source]) AS [CampaignLandings],
+            COUNT(DISTINCT CASE WHEN L.[Source] IS NOT NULL THEN L.[ContactID] END) AS [CampaignVisitors],
+            COUNT(DISTINCT L.[Source]) AS [SourceCount]
+        FROM @Landings L;
+
+        SELECT TOP (@SourceLimit)
+            L.[Source] AS [Source],
+            COUNT(*) AS [Landings],
+            COUNT(DISTINCT L.[ContactID]) AS [Visitors]
+        FROM @Landings L
+        WHERE L.[Source] IS NOT NULL
+        GROUP BY L.[Source]
+        ORDER BY COUNT(*) DESC, L.[Source];
+
+        SELECT TOP (@SourceContentLimit)
+            L.[Source] AS [Source],
+            L.[Content] AS [Content],
+            COUNT(*) AS [Landings],
+            COUNT(*) OVER () AS [GroupCount]
+        FROM @Landings L
+        WHERE L.[Source] IS NOT NULL
+        GROUP BY L.[Source], L.[Content]
+        ORDER BY COUNT(*) DESC, L.[Source], L.[Content];
+        """;
+
+    /// <summary>
+    /// <see cref="Query"/> and <see cref="CampaignQuery"/> in one round trip.
+    /// </summary>
+    internal const string Batch = Query + "\n" + CampaignQuery;
+
     public async Task<WebPageStatsData> GetData(WebPageStatsTarget target, DateOnly from, DateOnly to, CancellationToken cancellationToken)
     {
         string hosts = FormatHosts(target.FormUrlHosts);
@@ -88,9 +139,12 @@ internal sealed class WebPageStatsRepository : IWebPageStatsRepository
             new DataParameter("@ToExclusive", to.AddDays(1).ToDateTime(TimeOnly.MinValue)),
             new DataParameter("@PageVisitType", PredefinedActivityType.PAGE_VISIT),
             new DataParameter("@FormSubmitType", PredefinedActivityType.BIZFORM_SUBMIT),
+            new DataParameter("@LandingPageType", PredefinedActivityType.LANDING_PAGE),
+            new DataParameter("@SourceLimit", WebPageStatsReportBuilder.SourceLimit),
+            new DataParameter("@SourceContentLimit", WebPageStatsReportBuilder.SourceContentLimit),
         };
 
-        await using var reader = await ConnectionHelper.ExecuteReaderAsync(Query, parameters, QueryTypeEnum.SQLQuery, CommandBehavior.Default, cancellationToken);
+        await using var reader = await ConnectionHelper.ExecuteReaderAsync(Batch, parameters, QueryTypeEnum.SQLQuery, CommandBehavior.Default, cancellationToken);
 
         var rows = new List<StatsDailyCount>();
         int contacts = 0;
@@ -122,7 +176,54 @@ internal sealed class WebPageStatsRepository : IWebPageStatsRepository
                 reader.GetInt32(countOrdinal)));
         }
 
-        return new(rows, contacts, visitors, submitters);
+        return new(rows, contacts, visitors, submitters)
+        {
+            Campaigns = await ReadCampaigns(reader, cancellationToken),
+        };
+    }
+
+    private static async Task<WebPageCampaignData> ReadCampaigns(DbDataReader reader, CancellationToken cancellationToken)
+    {
+        // The INSERT into @Landings returns no result set, so the totals follow the activity result set.
+        await StatsSql.NextResult(reader, "web page stats", cancellationToken);
+        int landings = 0;
+        int campaignLandings = 0;
+        int campaignVisitors = 0;
+        int sourceCount = 0;
+        if (await reader.ReadAsync(cancellationToken))
+        {
+            landings = reader.GetInt32(reader.GetOrdinal("Landings"));
+            campaignLandings = reader.GetInt32(reader.GetOrdinal("CampaignLandings"));
+            campaignVisitors = reader.GetInt32(reader.GetOrdinal("CampaignVisitors"));
+            sourceCount = reader.GetInt32(reader.GetOrdinal("SourceCount"));
+        }
+
+        await StatsSql.NextResult(reader, "web page stats", cancellationToken);
+        var sources = new List<WebPageCampaignSourceRow>();
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            sources.Add(new(
+                reader.GetString(reader.GetOrdinal("Source")),
+                reader.GetInt32(reader.GetOrdinal("Landings")),
+                reader.GetInt32(reader.GetOrdinal("Visitors"))));
+        }
+
+        await StatsSql.NextResult(reader, "web page stats", cancellationToken);
+        var contents = new List<WebPageCampaignContentRow>();
+        int contentCount = 0;
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            int contentOrdinal = reader.GetOrdinal("Content");
+            contents.Add(new(
+                reader.GetString(reader.GetOrdinal("Source")),
+                reader.IsDBNull(contentOrdinal) ? null : reader.GetString(contentOrdinal),
+                reader.GetInt32(reader.GetOrdinal("Landings"))));
+
+            // Same value on every row.
+            contentCount = reader.GetInt32(reader.GetOrdinal("GroupCount"));
+        }
+
+        return new(landings, campaignLandings, campaignVisitors, sourceCount, sources, contentCount, contents);
     }
 
     /// <summary>

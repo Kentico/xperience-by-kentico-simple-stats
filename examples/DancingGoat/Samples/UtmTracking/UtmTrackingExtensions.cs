@@ -29,7 +29,11 @@ public static class UtmTrackingExtensions
         return services;
     }
 
-
+    /// <summary>
+    /// Could be simplified using a library like Scrutor <see href="https://github.com/khellang/Scrutor">here</see> or attribute-based decoration in Xperience <see href="https://docs.kentico.com/x/xQSiCQ">here</see>.
+    /// </summary>
+    /// <param name="services"></param>
+    /// <exception cref="InvalidOperationException"></exception>
     private static void DecorateWebPagesActivityLogger(IServiceCollection services)
     {
         var descriptor = services.LastOrDefault(service => service.ServiceType == typeof(IWebPagesActivityLogger))

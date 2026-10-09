@@ -84,6 +84,7 @@ _Content performance (content + activities)_
 - Stale but popular: high-traffic pages not modified in 12 months (what to refresh first). Spec (with pages with no visits): `.agent-resources/REPORT-15-PAGE-FRESHNESS.md`.
 - Pages with no visits: published pages with 0 page visits in 90 days. Needs data retention note.
 - Performance by content type or tag: page visits rolled up via `ActivityWebPageItemGUID`.
+- Campaign sources (UTM): landing page activities by `ActivityUTMSource` / `ActivityUTMContent` (filled only by the optional Dancing Goat UTM capture sample). Phase 1 in the web page Stats tab (renamed "Stats (Labs)"), phase 2 global "Campaign sources" report (Contacts section): top landing pages per source and content, sources, trend. Spec: `.agent-resources/REPORT-21-CAMPAIGN-SOURCES.md`.
 - Most-used reusable items: usage count and where used (pages, emails); risky to edit. Inverse of unused reusable items. Source: `CMS_ContentItemReference`. Spec: `.agent-resources/REPORT-16-REUSABLE-USAGE.md`.
 - Personalization and widget/template usage: pages with personalized widgets, variant counts, widget and template counts. _Uncertain: parses `ContentItemCommonDataVisualBuilderWidgets` JSON; cost on large sites._
 

@@ -5,7 +5,7 @@ using Kentico.Xperience.Admin.Base.Authentication;
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 
 /// <summary>
-/// Evaluates permissions of the "Simple Stats (Labs)" application for pages outside of it (for example the web page "Stats" tab).
+/// Evaluates permissions of the "Simple Stats (Labs)" application for pages outside of it (for example the web page "Stats (Labs)" tab).
 /// <see cref="Xperience.Admin.Base.IUIPermissionEvaluator"/> evaluates against the application of the current page, so it cannot be used there.
 /// </summary>
 internal interface IStatsApplicationPermissionEvaluator

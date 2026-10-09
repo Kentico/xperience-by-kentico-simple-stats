@@ -15,7 +15,7 @@ Reports are grouped into sections. Opening the application or a section opens it
 
 | Section  | Reports                                                                                                                                                                 |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Contacts | Activity counts, Top pages, New contacts, Form submissions, Member registrations, Consents                                                                              |
+| Contacts | Activity counts, Top pages, Campaign sources, New contacts, Form submissions, Member registrations, Consents                                                            |
 | Emails   | Email summary, Recipient lists                                                                                                                                          |
 | Content  | Content inventory, Publishing calendar, Content locks, Page freshness, Reusable content usage, Publishing activity, Translation status, Editor contributions, Tag usage |
 | Commerce | Orders and revenue, Customers                                                                                                                                           |
@@ -35,6 +35,7 @@ Sections have no permission of their own. A section is hidden when the role has 
 | ---------------------- | --------------------------------- |
 | Activity counts        | `SimpleStats.ActivityCounts`      |
 | Top pages              | `SimpleStats.TopPages`            |
+| Campaign sources       | `SimpleStats.CampaignSources`     |
 | New contacts           | `SimpleStats.NewContacts`         |
 | Form submissions       | `SimpleStats.FormSubmissions`     |
 | Content inventory      | `SimpleStats.ContentInventory`    |
@@ -83,14 +84,35 @@ Shows the 25 most visited page URLs in the range as a bar chart, largest on top.
 
 Visits are grouped by the logged URL with the query string and fragment removed, so `/page?utm_source=x` counts as `/page`. Other differences (host, trailing slash, letter case) count as different pages.
 
+### Campaign sources
+
+Shows which pages get the most traffic from a UTM source (and content), and how campaign landings change over time. Uses the UTM values stored on landing page activities. Xperience does not store them by itself; see [UTM capture (optional)](#utm-capture-optional) for sample code that does.
+
+- **Definitions** - the same as on the [Stats (Labs) tab](#campaign-sources-on-the-stats-labs-tab): **landings** (landing page activities, about the sessions that started on a page), **campaign landings** (landings with a UTM source), **campaign share**, **source**, **content** ("(none)" when empty) and **visitors** (distinct contacts).
+- **Filters**
+  - **Date range**, **Group by** and **Channel** (website channels; uses the activity channel).
+  - **Source** - all sources, or one of the sources with campaign landings in the range.
+  - **Content** - shown when a source is selected: all contents, one content, or "(none)".
+- **KPIs** - landings (all, with or without UTM values), campaign landings of the selected source and content, campaign share with the number of visitors, and the number of sources. Landings, campaign landings and sources are compared with the previous period of the same length.
+- **Tiles**
+  - "Top landing pages" - pages where campaign landings of the selected source and content started: page name, channel and language, campaign landings, visitors and share. The page name opens the page on the website in a new tab (the logged URL without query string). Up to 25 pages. A page that no longer exists shows its URL.
+  - "Top sources" - campaign landings per source with visitors, the previous period and the change. Always all sources (the source filter does not apply). Up to 10 sources.
+  - "Source and content" - campaign landings and visitors per source and content, for the selected source (the content filter does not apply). Up to 25 pairs.
+  - "Campaign landings over time" - stacked by the top 5 sources, the rest as "Other". Follows the source and content filter.
+- **Empty states** - "No UTM values are stored on this site" when no activity in the database has a UTM source, and "No campaign landings" when the site has UTM values but the filter has none in the range.
+- **Export CSV** - each tile has its own export: `campaign-sources-pages`, `campaign-sources-sources`, `campaign-sources-content`, `campaign-sources-series`.
+
+`utm_medium` and `utm_campaign` are not stored (no activity column). Put the campaign or creative name in `utm_content` to tell campaigns of one source apart. Conversions after a campaign landing (for example form submissions) are not shown. Contact and activity cleanup deletes old landings too (see [Data retention](#data-retention)).
+
 ### Web page stats
 
-A **Stats** tab on each web page in website channels (after the page's other tabs). Shows contact activities logged for that page in the language being edited, as a stacked column chart per activity type.
+A **Stats (Labs)** tab on each web page in website channels (after the page's other tabs). Shows contact activities logged for that page in the language being edited, as a stacked column chart per activity type, and the campaign sources (UTM values) of the page's landings.
 
 - **KPIs** - page visits, unique visitors (distinct contacts with a page visit), form submissions (with distinct submitters and their share of unique visitors), and total activities with the number of distinct contacts.
 - **Filters** - date range and grouping (no channel: the page belongs to one channel).
 - **Chart / table** - switch the tile to a table with the exact numbers.
 - **Export CSV** - downloads the table as a CSV file.
+- **Campaign sources** - below the activities. See [Campaign sources](#campaign-sources-on-the-stats-labs-tab).
 
 Activities are matched by the web page they were logged for (`ActivityWebPageItemGUID`) and the language. Only counts are shown; no contact details.
 
@@ -101,6 +123,24 @@ Form submission activities have no web page link or language, so they are matche
 - Channels with [language-specific domains](https://docs.kentico.com/documentation/developers-and-admins/configuration/website-channel-management#configure-language-specific-domains) use the same paths for all languages, so the URL host must also match: the domain and aliases configured for the edited language in `WebsiteChannelDomains:LanguageDomains` of the running environment (host and port, letter case ignored). If the language has no domain configured, the host is not checked and submissions of all languages on the same path are counted together; the tooltip says so.
 - Domains are read from the configuration of the environment that runs the admin. Activities logged under other hosts (for example production data copied to a local database) are not matched on language-domain channels.
 - Language prefix channels ignore the host, because the path already includes the language. The tab requires the **Web page stats** permission of **Simple Stats (Labs)** (not the **View** permission of the application) and is hidden on the channel root.
+
+#### Campaign sources on the Stats (Labs) tab
+
+Shows which campaigns bring visitors to the page. Uses the UTM values stored on landing page activities. Xperience does not store them by itself; see [UTM capture (optional)](#utm-capture-optional) for sample code that does.
+
+- **Definitions**
+  - **Landings** - landing page activities of the page variant in the range, matched by page and language like the other activities. A landing page activity is logged for the first page of a browsing session, so landings are about the sessions that started on this page.
+  - **Campaign landings** - landings with a UTM source (`utm_source`). **Campaign share** - campaign landings / landings.
+  - **Source** - the stored UTM source, trimmed. **Content** - the stored UTM content (`utm_content`), or "(none)" when empty. Values that differ only in letter case are counted together (default database collation).
+  - **Visitors** - distinct contacts.
+- **KPIs** - landings, and campaign landings with their share of landings and the number of distinct contacts.
+- **Tiles**
+  - "Campaign sources" - campaign landings per source: bar chart, or a table (source, landings, visitors, share of campaign landings). Up to 10 sources.
+  - "Source and content" - table (source, content, landings, share of campaign landings). Up to 25 pairs.
+- **Empty states** - "No UTM values are stored on this site" when no activity in the database has a UTM source (UTM capture is not set up), and "No campaign landings on this page" when the site has UTM values but this page has none in the range.
+- **Export CSV** - each tile has its own export: `web-page-stats-campaign-sources` and `web-page-stats-campaign-content`.
+
+`utm_medium` and `utm_campaign` are not stored (no activity column), so they are not shown.
 
 ### New contacts
 
@@ -274,7 +314,7 @@ Shows which published pages people still read but nobody has updated for a long 
   - **Published page** - a page language variant with a published version, whose content type has a URL. Page folders and pages without a URL (for example navigation items) are left out. A page in two languages counts twice.
   - **Last change** - the last change of the variant's latest version, as in "Content inventory" (a newer draft counts as a change).
   - **Stale** - not changed in 12 months (the same threshold as "Content inventory").
-  - **Visits** - page visit activities of the variant in the range, matched by page and language (as the page's **Stats** tab). **Visitors** - distinct contacts.
+  - **Visits** - page visit activities of the variant in the range, matched by page and language (as the page's **Stats (Labs)** tab). **Visitors** - distinct contacts.
   - **No visits** - published, first published before the range start (new pages get a fair chance), and no visit in the range. When the first publish date is not stored (for example imported data), the last publish date is used; when neither is stored, the page counts as published before the range.
 - **KPIs** - published pages, stale pages (share of published pages), share of the range's visits that went to stale pages, and pages with no visits.
 - **Filters** - date range and website channel. No grouping.
@@ -497,6 +537,8 @@ A handler exception is logged and does not fail the export. Handlers run one aft
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Activity counts        | `activity-counts`                                                                                                                                                                                            |
 | Top pages              | `top-pages`                                                                                                                                                                                                  |
+| Campaign sources       | `campaign-sources-series`, `campaign-sources-sources`, `campaign-sources-pages`, `campaign-sources-content`                                                                                                  |
+| Web page stats         | `web-page-stats`, `web-page-stats-campaign-sources`, `web-page-stats-campaign-content`                                                                                                                       |
 | New contacts           | `new-contacts`, `new-contacts-share`                                                                                                                                                                         |
 | Form submissions       | `form-submissions`, `form-submissions-by-form`                                                                                                                                                               |
 | Member registrations   | `members-growth`, `members-sign-in-type`, `members-by-role`                                                                                                                                                  |
@@ -526,7 +568,7 @@ In the `examples/DancingGoat` project, use the **Sample data generator** applica
 
 ## UTM capture (optional)
 
-Activities have `ActivityUTMSource` and `ActivityUTMContent` columns, but Xperience does not fill them. The `examples/DancingGoat` project stores the `utm_source` and `utm_content` query parameters on landing page activities, so you can report on campaign sources. `utm_medium` and `utm_campaign` have no column and are not stored.
+Activities have `ActivityUTMSource` and `ActivityUTMContent` columns, but Xperience does not fill them. The `examples/DancingGoat` project stores the `utm_source` and `utm_content` query parameters on landing page activities, so you can report on campaign sources. The web page **Stats (Labs)** tab shows them per page ([Campaign sources](#campaign-sources-on-the-stats-labs-tab)), and the [Campaign sources](#campaign-sources) report across pages. `utm_medium` and `utm_campaign` have no column and are not stored.
 
 The code is in `examples/DancingGoat/Samples/UtmTracking` and can be copied into your project:
 
@@ -537,3 +579,33 @@ The code is in `examples/DancingGoat/Samples/UtmTracking` and can be copied into
 - `UtmTrackingExtensions.cs` - call `builder.Services.AddUtmTracking()` in `Program.cs` after `AddKentico()`.
 
 A landing page activity is logged for the first page of a browsing session. Xperience then sets a cookie that marks the session as landed, renewed for 20 minutes on each page view, so a visit after 20 minutes without page views counts as a new landing page and captures the UTM values of its URL. Only the landing page activity gets the values, not later page visits.
+
+How the values get from the page URL to the activity:
+
+```mermaid
+sequenceDiagram
+    participant V as Visitor browser
+    participant S as Tracking script
+    participant E as Logger endpoint
+    participant D as UTM decorator
+    participant P as UtmParameters
+    participant L as Xperience logger
+    participant M as UtmActivityModifier
+    participant DB as OM_Activity
+
+    V->>V: Open page URL with utm_source, utm_content
+    V->>S: Page renders, script runs
+    S->>E: POST Kentico.Activities/Logger/Log with page URL
+    E->>D: LogLandingPage(activity URL)
+    D->>P: Store utm_source, utm_content from URL
+    D->>L: LogLandingPage(activity URL)
+    alt Landed cookie missing or expired
+        L->>M: Modify(landing page activity)
+        M->>P: Read values
+        M->>M: Set ActivityUTMSource, ActivityUTMContent (max 200 chars)
+        L->>DB: Save landing page activity
+    else Landed cookie present
+        Note over L: No landing page activity
+    end
+    L-->>V: Set or refresh landed cookie (20 minutes)
+```

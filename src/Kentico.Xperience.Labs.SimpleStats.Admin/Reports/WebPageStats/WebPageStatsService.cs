@@ -23,12 +23,14 @@ public interface IWebPageStatsService
 internal sealed class WebPageStatsService(
     IWebPageStatsRepository repository,
     IActivityCountsRepository activityCountsRepository,
+    IStatsUtmDataRepository utmDataRepository,
     IProgressiveCache cache,
     IStatsCacheInvalidator cacheInvalidator,
     TimeProvider clock) : IWebPageStatsService
 {
     private readonly IWebPageStatsRepository repository = repository;
     private readonly IActivityCountsRepository activityCountsRepository = activityCountsRepository;
+    private readonly IStatsUtmDataRepository utmDataRepository = utmDataRepository;
     private readonly IProgressiveCache cache = cache;
     private readonly IStatsCacheInvalidator cacheInvalidator = cacheInvalidator;
     private readonly TimeProvider clock = clock;
@@ -67,6 +69,11 @@ internal sealed class WebPageStatsService(
             activityCountsRepository.GetActivityTypeDisplayNames,
             cancellationToken);
 
-        return WebPageStatsReportBuilder.Build(query, snapshot.Data, displayNames, target) with { UpdatedAt = snapshot.ReadAt };
+        // Only needed to explain an empty campaign section: a page with campaign landings proves the site has UTM data.
+        // One site-wide item, so the check (an index scan when no row matches) runs at most once per cache expiry.
+        bool hasAnyUtmData = snapshot.Data.Campaigns.CampaignLandings > 0
+            || await StatsUtm.HasAnyUtmData(cache, cacheInvalidator, utmDataRepository, refresh, cancellationToken);
+
+        return WebPageStatsReportBuilder.Build(query, snapshot.Data, displayNames, target, hasAnyUtmData) with { UpdatedAt = snapshot.ReadAt };
     }
 }

@@ -2,6 +2,7 @@ using CMS.Core;
 
 using Kentico.Xperience.Admin.Base;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ActivityCounts;
+using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.CampaignSources;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.Consents;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentInventory;
 using Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ContentLocks;
@@ -62,6 +63,9 @@ internal sealed class SimpleStatsWebAdminModule : AdminModule
         services.TryAddTransient<IActivityCountsService, ActivityCountsService>();
         services.TryAddTransient<ITopPagesRepository, TopPagesRepository>();
         services.TryAddTransient<ITopPagesService, TopPagesService>();
+        services.TryAddTransient<IStatsUtmDataRepository, StatsUtmDataRepository>();
+        services.TryAddTransient<ICampaignSourcesRepository, CampaignSourcesRepository>();
+        services.TryAddTransient<ICampaignSourcesService, CampaignSourcesService>();
         services.TryAddTransient<INewContactsRepository, NewContactsRepository>();
         services.TryAddTransient<INewContactsService, NewContactsService>();
         services.TryAddTransient<IStatsAdminLinks, StatsAdminLinks>();

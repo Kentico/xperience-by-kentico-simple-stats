@@ -3,6 +3,8 @@ using System.Data;
 using CMS.Activities;
 using CMS.DataEngine;
 
+using Kentico.Xperience.Labs.SimpleStats.Admin.Shared;
+
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.TopPages;
 
 /// <summary>
@@ -19,17 +21,16 @@ internal interface ITopPagesRepository
 internal sealed class TopPagesRepository : ITopPagesRepository
 {
     // Only constant SQL fragments are combined here. All values are passed as parameters.
-    // The URL is cut at the first '?' or '#', so query strings (for example UTM tags) and fragments
-    // count toward the same page. Other differences (host, trailing slash, case) are kept as stored.
+    // The URL is cut at the first '?' or '#' (see StatsSql.ActivityUrlWithoutQuery).
     // Window aggregates run over all grouped URLs before TOP, so totals cover the whole range in one query.
-    private const string SelectClause = """
+    private const string SelectClause = $$"""
         WITH [Visits] AS (
             SELECT
-                CASE WHEN U.[Cut] > 0 THEN LEFT(A.[ActivityURL], U.[Cut] - 1) ELSE ISNULL(A.[ActivityURL], N'') END AS [PageURL],
+                ISNULL({{StatsSql.ActivityUrlWithoutQuery}}, N'') AS [PageURL],
                 A.[ActivityContactID],
                 A.[ActivityTitle]
             FROM [OM_Activity] A
-            CROSS APPLY (SELECT PATINDEX(N'%[?#]%', A.[ActivityURL]) AS [Cut]) U
+            {{StatsSql.ActivityUrlCutApply}}
             WHERE A.[ActivityType] = @ActivityType
                 AND A.[ActivityCreated] >= @From
                 AND A.[ActivityCreated] < @ToExclusive

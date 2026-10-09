@@ -20,7 +20,7 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.PageFreshness;
 /// <see cref="ContentInventorySql"/>).
 /// </para>
 /// <para>
-/// Visits: page visit activities in the range, matched by <c>ActivityWebPageItemGUID</c> and <c>ActivityLanguageID</c> (as the web page Stats tab),
+/// Visits: page visit activities in the range, matched by <c>ActivityWebPageItemGUID</c> and <c>ActivityLanguageID</c> (as the web page "Stats (Labs)" tab),
 /// aggregated once per page and language into the <c>@Pages</c> table, which the result sets read.
 /// </para>
 /// </remarks>
