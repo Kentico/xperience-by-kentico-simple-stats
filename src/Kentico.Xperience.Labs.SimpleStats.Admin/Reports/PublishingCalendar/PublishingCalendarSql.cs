@@ -114,7 +114,7 @@ internal static class PublishingCalendarSql
         """;
 
     // 1. Upcoming events. {0} = variants FROM, {1} = items WHERE, {2} = events source, {3} = window condition.
-    private static readonly string UpcomingInsert = $$"""
+    private static readonly string upcomingInsert = $$"""
         INSERT INTO @Events
         SELECT {{UpcomingKind}}, M.[ContentItemLanguageMetadataID], EV.[Action], EV.[When]
         {0}
@@ -124,7 +124,7 @@ internal static class PublishingCalendarSql
         """;
 
     // 2. Recently published variants. {0} = variants FROM, {1} = items WHERE, {4} = recent join, {5} = recent condition.
-    private static readonly string RecentInsert = $$"""
+    private static readonly string recentInsert = $$"""
         INSERT INTO @Events
         SELECT {{RecentKind}}, M.[ContentItemLanguageMetadataID], {{PublishAction}}, D.[ContentItemCommonDataLastPublishedWhen]
         {0}
@@ -142,7 +142,7 @@ internal static class PublishingCalendarSql
         """;
 
     // 3. Counts (one row), not limited by @Limit.
-    private static readonly string CountsQuery = $$"""
+    private static readonly string countsQuery = $$"""
         SELECT
             COUNT(CASE WHEN EV.[Kind] = {{UpcomingKind}} AND EV.[Action] = {8} THEN 1 END) AS [UpcomingPublish],
             COUNT(CASE WHEN EV.[Kind] = {{UpcomingKind}} AND EV.[Action] = {9} THEN 1 END) AS [UpcomingUnpublish],
@@ -151,7 +151,7 @@ internal static class PublishingCalendarSql
         """;
 
     // 4. Upcoming events per day. Days without events are filled with 0 by the report builder.
-    private static readonly string DaysQuery = $$"""
+    private static readonly string daysQuery = $$"""
         SELECT
             CAST(EV.[When] AS date) AS [Day],
             SUM(CASE WHEN EV.[Action] = {8} THEN 1 ELSE 0 END) AS [Publish],
@@ -162,7 +162,7 @@ internal static class PublishingCalendarSql
         """;
 
     // 5. Upcoming events, soonest first (publish before unpublish at the same time).
-    private static readonly string UpcomingQuery = $$"""
+    private static readonly string upcomingQuery = $$"""
         SELECT TOP (@Limit)
             EV.[When],
             EV.[Action],
@@ -174,7 +174,7 @@ internal static class PublishingCalendarSql
         """;
 
     // 6. Recently published variants, newest first.
-    private static readonly string RecentQuery = $$"""
+    private static readonly string recentQuery = $$"""
         SELECT TOP (@Limit)
             EV.[When],
             {6}
@@ -324,7 +324,7 @@ internal static class PublishingCalendarSql
         {
             "SET NOCOUNT ON;",
         };
-        statements.AddRange(new[] { EventsTable, UpcomingInsert, RecentInsert, CountsQuery, DaysQuery, UpcomingQuery, RecentQuery }
+        statements.AddRange(new[] { EventsTable, upcomingInsert, recentInsert, countsQuery, daysQuery, upcomingQuery, recentQuery }
             .Select(query => string.Format(null, query, args)));
 
         if (withSends)
