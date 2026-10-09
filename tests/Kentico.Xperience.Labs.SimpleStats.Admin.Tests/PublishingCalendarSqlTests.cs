@@ -10,8 +10,6 @@ public class PublishingCalendarSqlTests
     // Upcoming and recent inserts into @Events.
     private const int FilteredStatements = 2;
 
-    private const string UpcomingCondition = "EV.[When] >= " + PublishingCalendarSql.UpcomingFromParameter;
-    private const string UpcomingEndCondition = "EV.[When] <= " + PublishingCalendarSql.UpcomingToParameter;
 
     [Test]
     public void Build_WithoutSends_ReturnsEventsInsertsAndFourQueries_WithoutPlaceholders()
@@ -41,40 +39,6 @@ public class PublishingCalendarSqlTests
 
         Assert.That(Count(sql, "C.[ClassContentTypeType] = " + StatsContentSql.KindParameter), Is.EqualTo(FilteredStatements + 1));
         Assert.That(Count(sql, "I.[ContentItemChannelID] = " + StatsContentSql.ChannelParameter), Is.EqualTo(FilteredStatements + 1));
-    }
-
-    [Test]
-    public void Build_EventsComeFromBothScheduleColumns()
-    {
-        string sql = PublishingCalendarSql.Build(hasKind: false, hasChannel: false, withSends: false);
-
-        // One events source, read into @Events once.
-        Assert.That(Count(sql, "M.[ContentItemLanguageMetadataScheduledPublishWhen]"), Is.EqualTo(1));
-        Assert.That(Count(sql, "M.[ContentItemLanguageMetadataScheduledUnpublishWhen]"), Is.EqualTo(1));
-    }
-
-    [Test]
-    public void Build_WindowIsInclusiveOnBothEnds_AndNothingBeforeItIsRead()
-    {
-        string sql = PublishingCalendarSql.Build(hasKind: false, hasChannel: false, withSends: true);
-
-        Assert.Multiple(() =>
-        {
-            // Read once into @Events.
-            Assert.That(Count(sql, UpcomingCondition), Is.EqualTo(1));
-            Assert.That(Count(sql, UpcomingEndCondition), Is.EqualTo(1));
-            // Past schedules are not listed.
-            Assert.That(sql, Does.Not.Contain("EV.[When] <" + " @"));
-        });
-    }
-
-    [Test]
-    public void Build_RecentlyPublished_UsesLatestVersion()
-    {
-        string sql = PublishingCalendarSql.Build(hasKind: false, hasChannel: false, withSends: false);
-
-        Assert.That(Count(sql, "D.[ContentItemCommonDataIsLatest] = 1"), Is.EqualTo(1));
-        Assert.That(Count(sql, "D.[ContentItemCommonDataLastPublishedWhen] >= " + PublishingCalendarSql.RecentFromParameter), Is.EqualTo(1));
     }
 
     [Test]

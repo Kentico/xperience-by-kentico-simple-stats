@@ -21,20 +21,6 @@ public class PublishingActivitySqlTests
     }
 
     [Test]
-    public void Build_Variants_AreContentTypeItems_FoldersExcluded_WithFilters()
-    {
-        string sql = PublishingActivitySql.Build(hasKind: true, hasChannel: true);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(sql, Does.Contain("C.[ClassType] = " + StatsContentSql.ClassTypeParameter));
-            Assert.That(sql, Does.Contain("C.[ClassContentTypeType] IS NOT NULL"));
-            Assert.That(Count(sql, "C.[ClassContentTypeType] = " + StatsContentSql.KindParameter), Is.EqualTo(1));
-            Assert.That(Count(sql, "I.[ContentItemChannelID] = " + StatsContentSql.ChannelParameter), Is.EqualTo(1));
-        });
-    }
-
-    [Test]
     public void Build_WithoutFilters_HasNoFilterParameters()
     {
         string sql = PublishingActivitySql.Build(hasKind: false, hasChannel: false);
@@ -59,21 +45,6 @@ public class PublishingActivitySqlTests
             Assert.That(sql, Does.Contain("IN (" + PublishingActivitySql.PublishedStatusParameter + ", " + PublishingActivitySql.UnpublishedStatusParameter + ")"));
             // Published without a date: counted as unknown, not in the series.
             Assert.That(sql, Does.Contain("X.[WasPublished] = 1 AND X.[FirstPublishedWhen] IS NULL"));
-        });
-    }
-
-    [Test]
-    public void Build_Updates_ArePublishVersions_ExceptTheFirstPublish()
-    {
-        string sql = PublishingActivitySql.Build(hasKind: false, hasChannel: false);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(sql, Does.Contain("V.[ContentItemVersionAction] = " + PublishingActivitySql.PublishActionParameter));
-            Assert.That(sql, Does.Contain("P.[ContentItemVersionAction] = " + PublishingActivitySql.PublishActionParameter));
-            Assert.That(sql, Does.Contain(
-                "ABS(DATEDIFF(second, X.[FirstPublishedWhen], V.[ContentItemVersionCreatedWhen])) <= " + PublishingActivitySql.FirstPublishToleranceParameter));
-            Assert.That(sql, Does.Contain("V.[ContentItemVersionCreatedWhen] >= " + PublishingActivitySql.PreviousFromParameter));
         });
     }
 

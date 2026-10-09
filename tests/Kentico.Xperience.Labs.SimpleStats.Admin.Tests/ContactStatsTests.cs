@@ -463,28 +463,12 @@ public class ContactStatsTests
     }
 
     [Test]
-    public void TagsSql_DirectAndLinkedTags_PublishedReferencesOnly_LanguageFallback_OncePerVisit() => Assert.Multiple(() =>
+    public void TagsSql_LanguageFallback_AndMainBatchHasNoTaxonomy() => Assert.Multiple(() =>
     {
-        string sql = ContactStatsSql.TagsQuery;
-
-        // Direct page tags and tags of linked items (one level), merged.
-        Assert.That(sql, Does.Contain("PI.[ContentItemID] AS [ItemID]"));
-        Assert.That(sql, Does.Contain("R.[ContentItemReferenceTargetItemID]"));
-        Assert.That(sql, Does.Contain("UNION"));
-        // Only references of the page's published version in the visit's language: draft-only links are ignored.
-        Assert.That(sql, Does.Contain("D.[ContentItemCommonDataVersionStatus] = @PublishedStatus"));
-        Assert.That(sql, Does.Contain("D.[ContentItemCommonDataContentLanguageID] = PI.[LanguageID]"));
+        // Direct and linked tags, published references only, once per visit and the taxonomy filter are covered by the integration tests.
         // Tags of the visit's language variant first, else the variant with the lowest metadata ID.
-        Assert.That(sql, Does.Contain("ORDER BY CASE WHEN M.[ContentItemLanguageMetadataContentLanguageID] = RC.[LanguageID] THEN 0 ELSE 1 END, M.[ContentItemLanguageMetadataID]"));
-        // A visit counts once per tag, whatever the path.
-        Assert.That(sql, Does.Contain("SELECT DISTINCT RC.[PageGUID], RC.[LanguageID], G.[TagID]"));
-        Assert.That(sql, Does.Contain("PRIMARY KEY ([ActivityID], [TagID])"));
-        // Taxonomy filter (0 = all) on the tags only; options keep all taxonomies plus the selected one.
-        Assert.That(sql, Does.Contain("@TaxonomyID = 0 OR VT.[TaxonomyID] = @TaxonomyID"));
-        Assert.That(sql, Does.Contain("OR X.[TaxonomyID] = @TaxonomyID"));
-        // Only page visits in the range (and the activity type filter) contribute; the main batch has no tags.
-        Assert.That(sql, Does.Contain("A.[ActivityType] = @PageVisitType"));
-        Assert.That(sql, Does.Contain("A.[ActivityCreated] >= @From"));
+        Assert.That(ContactStatsSql.TagsQuery, Does.Contain("ORDER BY CASE WHEN M.[ContentItemLanguageMetadataContentLanguageID] = RC.[LanguageID] THEN 0 ELSE 1 END, M.[ContentItemLanguageMetadataID]"));
+        // The main batch does not depend on the taxonomy, so a taxonomy change reads only the tags.
         Assert.That(ContactStatsSql.Batch, Does.Not.Contain("@TaxonomyID"));
     });
 
