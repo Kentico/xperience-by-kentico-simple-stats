@@ -49,7 +49,7 @@ public sealed class OverviewPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<OverviewClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/Overview";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/Overview";
 
     /// <summary>
     /// Snapshot tiles use all kinds and all channels (the same cache key as the reports' unfiltered view).

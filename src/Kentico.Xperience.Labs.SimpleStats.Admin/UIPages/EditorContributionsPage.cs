@@ -27,7 +27,7 @@ public sealed class EditorContributionsPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<EditorContributionsClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/EditorContributions";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/EditorContributions";
 
     private readonly IEditorContributionsService editorContributionsService = editorContributionsService;
     private readonly IStatsChannelOptionsProvider channelOptionsProvider = channelOptionsProvider;

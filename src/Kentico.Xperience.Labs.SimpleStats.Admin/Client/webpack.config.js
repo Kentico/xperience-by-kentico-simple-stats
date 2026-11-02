@@ -10,7 +10,7 @@ module.exports = (opts, argv) => {
   const baseConfig = (webpackConfigEnv, webpackArgv) =>
     baseWebpackConfig({
       orgName: "kentico",
-      projectName: "xperience-admin-labs-simple-stats",
+      projectName: "xperience-labs-simple-stats-admin",
       webpackConfigEnv,
       argv: webpackArgv,
     });
@@ -65,7 +65,7 @@ function buildConfig(baseConfig, opts, argv) {
       chunkFormat: false,
     },
     devServer: {
-      port: 3009,
+      port: 3050,
       server: {
         type: "https",
         options: {

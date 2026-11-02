@@ -48,7 +48,7 @@ internal sealed class WebPageStatsPage(
     /// </summary>
     public const string NAME = "Stats (Labs)";
 
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/WebPageStats";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/WebPageStats";
 
     /// <summary>
     /// After "root-properties" (<c>RootPropertiesTab</c>, 10100), the last tab the Websites application registers on <see cref="WebPageLayout"/>.

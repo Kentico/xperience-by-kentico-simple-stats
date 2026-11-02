@@ -24,7 +24,7 @@ public sealed class ConsentsPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<ConsentsClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/Consents";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/Consents";
 
     private readonly IConsentsService consentsService = consentsService;
     private readonly IPageLinkGenerator pageLinkGenerator = pageLinkGenerator;

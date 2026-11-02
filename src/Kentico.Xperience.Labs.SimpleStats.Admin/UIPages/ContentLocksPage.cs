@@ -25,7 +25,7 @@ public sealed class ContentLocksPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<ContentLocksClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/ContentLocks";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/ContentLocks";
 
     private readonly IContentLocksService contentLocksService = contentLocksService;
     private readonly IStatsChannelOptionsProvider channelOptionsProvider = channelOptionsProvider;

@@ -22,7 +22,7 @@ public class OverviewPageTests
             Assert.That(registration.Slug, Is.EqualTo("overview"));
             Assert.That(registration.Name, Is.EqualTo("Overview"));
             Assert.That(registration.Order, Is.EqualTo(50));
-            Assert.That(registration.TemplateName, Is.EqualTo("@kentico/xperience-admin-labs-simple-stats/Overview"));
+            Assert.That(registration.TemplateName, Is.EqualTo("@kentico/xperience-labs-simple-stats-admin/Overview"));
             Assert.That(registration.Icon, Is.EqualTo(Icons.Gauge));
             Assert.That(StatsNavigation.GetChildPages(typeof(StatsApplicationPage))[0].Type, Is.EqualTo(typeof(OverviewPage)));
         });

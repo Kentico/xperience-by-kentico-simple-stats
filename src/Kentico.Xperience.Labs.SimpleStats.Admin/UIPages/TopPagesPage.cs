@@ -27,7 +27,7 @@ public sealed class TopPagesPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<TopPagesClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/TopPages";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/TopPages";
 
     private readonly ITopPagesService topPagesService = topPagesService;
     private readonly IStatsChannelOptionsProvider channelOptionsProvider = channelOptionsProvider;

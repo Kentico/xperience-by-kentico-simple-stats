@@ -25,7 +25,7 @@ public sealed class MembersPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<MembersClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/Members";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/Members";
 
     private readonly IMembersService membersService = membersService;
     private readonly IPageLinkGenerator pageLinkGenerator = pageLinkGenerator;

@@ -27,7 +27,7 @@ public sealed class PageFreshnessPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<PageFreshnessClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/PageFreshness";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/PageFreshness";
 
     private readonly IPageFreshnessService pageFreshnessService = pageFreshnessService;
     private readonly IStatsChannelOptionsProvider channelOptionsProvider = channelOptionsProvider;

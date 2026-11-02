@@ -19,7 +19,7 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 [UINavigation(false)]
 public sealed class StatsNoReportsPage : Page
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/NoReports";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/NoReports";
 
     /// <summary>
     /// Order after all sections.

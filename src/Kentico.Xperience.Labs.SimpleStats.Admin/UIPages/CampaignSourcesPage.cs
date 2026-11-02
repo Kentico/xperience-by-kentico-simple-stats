@@ -28,7 +28,7 @@ public sealed class CampaignSourcesPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<CampaignSourcesClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/CampaignSources";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/CampaignSources";
 
     /// <summary>
     /// Landing page activities are logged for website channels only.

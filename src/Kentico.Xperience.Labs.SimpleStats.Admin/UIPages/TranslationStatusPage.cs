@@ -25,7 +25,7 @@ public sealed class TranslationStatusPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<TranslationStatusClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/TranslationStatus";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/TranslationStatus";
 
     private readonly ITranslationStatusService translationStatusService = translationStatusService;
     private readonly IStatsChannelOptionsProvider channelOptionsProvider = channelOptionsProvider;

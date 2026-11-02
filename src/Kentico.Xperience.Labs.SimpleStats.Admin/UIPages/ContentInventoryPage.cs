@@ -25,7 +25,7 @@ public sealed class ContentInventoryPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<ContentInventoryClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/ContentInventory";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/ContentInventory";
 
     private readonly IContentInventoryService contentInventoryService = contentInventoryService;
     private readonly IStatsChannelOptionsProvider channelOptionsProvider = channelOptionsProvider;
