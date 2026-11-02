@@ -22,6 +22,41 @@
   border-bottom: none;
 }
 
+/* Short tables (Coming up, Recently published, Forms): rows share column widths. */
+.SimpleStats-overviewTable {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) minmax(0, max-content);
+  column-gap: var(--spacing-m);
+}
+
+.SimpleStats-overviewTable > .SimpleStats-overviewListRow {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+.SimpleStats-overviewTable .SimpleStats-overviewListDate {
+  min-width: 0;
+}
+
+.SimpleStats-overviewTable .SimpleStats-overviewListText {
+  min-width: 0;
+  justify-self: start;
+  text-align: left;
+}
+
+.SimpleStats-overviewTable .SimpleStats-overviewListText > * {
+  justify-content: flex-start;
+  text-align: left;
+  max-width: 100%;
+}
+
+.SimpleStats-overviewTable .SimpleStats-overviewListDetail {
+  min-width: 0;
+  text-align: right;
+}
+
 .SimpleStats-overviewStatus {
   flex: 0 0 96px;
 }

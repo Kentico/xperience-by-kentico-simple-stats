@@ -22,16 +22,17 @@ export const OverviewRows = ({ rows, emptyMessage, getHref, total }: OverviewRow
 
   return (
     <>
-      <ul className="SimpleStats-overviewList">
+      <ul className="SimpleStats-overviewList SimpleStats-overviewTable">
         {rows.map((row) => {
           const href = getHref(row.adminPath);
+          // Always render all three cells so the columns line up across rows.
           return (
             <li key={row.key} className="SimpleStats-overviewListRow">
-              {row.date && <span className="SimpleStats-overviewListDate">{formatRowDate(row.date)}</span>}
+              <span className="SimpleStats-overviewListDate">{row.date ? formatRowDate(row.date) : ''}</span>
               <span className="SimpleStats-overviewListText">
                 {href ? <Link href={href} text={row.label} ellipsis /> : row.label}
               </span>
-              {row.detail && <span className="SimpleStats-overviewListDetail">{row.detail}</span>}
+              <span className="SimpleStats-overviewListDetail">{row.detail ?? ''}</span>
             </li>
           );
         })}
