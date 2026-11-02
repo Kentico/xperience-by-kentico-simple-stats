@@ -16,11 +16,12 @@ using Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 
 /// <summary>
-/// "Simple Stats (Labs)" admin application. Reports are grouped into <see cref="StatsSectionPage"/> sections.
+/// "Simple Stats (Labs)" admin application. The <see cref="OverviewPage"/> comes first; reports are grouped into <see cref="StatsSectionPage"/> sections.
 /// Assign the View permission to roles that may open the application,
 /// plus one <see cref="StatsPermissions"/> permission per report the role may see, and optionally <see cref="StatsPermissions.EXPORT"/>.
 /// </summary>
 [UIPermission(SystemPermissions.VIEW)]
+[UIPermission(StatsPermissions.OVERVIEW, StatsPermissions.OVERVIEW_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.ACTIVITY_COUNTS, StatsPermissions.ACTIVITY_COUNTS_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.TOP_PAGES, StatsPermissions.TOP_PAGES_DISPLAY_NAME)]
 [UIPermission(StatsPermissions.CAMPAIGN_SOURCES, StatsPermissions.CAMPAIGN_SOURCES_DISPLAY_NAME)]

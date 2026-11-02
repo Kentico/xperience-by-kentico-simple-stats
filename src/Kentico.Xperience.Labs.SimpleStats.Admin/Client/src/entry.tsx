@@ -13,6 +13,7 @@ import { FormSubmissionsTemplate as FormSubmissions } from './form-submissions/F
 import { MembersTemplate as Members } from './members/MembersTemplate';
 import { NewContactsTemplate as NewContacts } from './new-contacts/NewContactsTemplate';
 import { OrdersRevenueTemplate as OrdersRevenue } from './orders-revenue/OrdersRevenueTemplate';
+import { OverviewTemplate as Overview } from './overview/OverviewTemplate';
 import { PageFreshnessTemplate as PageFreshness } from './page-freshness/PageFreshnessTemplate';
 import { PublishingActivityTemplate as PublishingActivity } from './publishing-activity/PublishingActivityTemplate';
 import { PublishingCalendarTemplate as PublishingCalendar } from './publishing-calendar/PublishingCalendarTemplate';
@@ -25,6 +26,7 @@ import { TranslationStatusTemplate as TranslationStatus } from './translation-st
 import { WebPageStatsTemplate as WebPageStats } from './web-page-stats/WebPageStatsTemplate';
 
 // Report templates get the Export permission (`canExport`) for their "Export CSV" buttons.
+export const OverviewTemplate = withExportPermission(Overview);
 export const ActivityCountsTemplate = withExportPermission(ActivityCounts);
 export const TopPagesTemplate = withExportPermission(TopPages);
 export const CampaignSourcesTemplate = withExportPermission(CampaignSources);

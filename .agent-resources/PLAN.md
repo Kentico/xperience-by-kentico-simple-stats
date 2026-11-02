@@ -36,6 +36,15 @@ Design goals:
 | Form submissions per form over time | Form data tables                    | One query per form; ranked list of most and least used forms                   |
 | Email summary across all emails     | Email statistics                    | Sends, open rate, click rate, bounces, unsubscribes; top and bottom performers. Spec: `.agent-resources/REPORT-12-EMAIL-SUMMARY.md` |
 
+### Next: Overview and GA4 (Report 23)
+
+Specs: `.agent-resources/REPORT-23-OVERVIEW.md` (Phases 1 and 3), `.agent-resources/REPORT-24-GOOGLE-ANALYTICS.md` (Phase 2). Source: Claude Docs https://claude.ai/artifact/9Tafh96N1o5EbDvDjz4hXS (2026-10-30). Audience: marketing director / CMO. Answers "what changed" in 5 to 10 seconds. Three phases, user decision between each.
+
+- **Phase 1: Overview page.** No new SQL; tiles call existing report services. Page `OverviewPage` (slug `overview`, order 50), permission `SimpleStats.Overview`; each tile also needs its source report permission. Sections: needs attention (workflow overdue, forgotten edits, old locks, stale popular pages, error increase), coming up, recently published, KPI row with previous-period change, emails, forms, system. Range 7 / 14 / 30 days. One page command per tile, loaded in parallel. Shared change: add `StatsComparison` to New contacts (and other totals where missing). Code in own folders so it can move to its own admin application later (open question).
+- **Phase 2: GA4 traffic** (after user validates page matching in GA4 Query Explorer). GA4 Data API through a service account; options `SimpleStatsGoogleAnalyticsOptions` (property ID, credentials JSON). Permission `SimpleStats.GoogleAnalytics`. Shows in Overview (visitors, sessions, new content performance, tracked share, "0 views after 3 days" attention item), Top pages (source toggle), Page freshness, web page Stats (Labs) tab, later Campaign sources. Open: client library vs REST.
+- **Phase 3: new data sources** (each needs its own spec): recycle bin, automation (stuck contacts, growing Wait steps), campaigns and customer journeys (preview feature), admin sign-ins (needs own table). Feed Overview attention items.
+- Out of scope: AI summaries, alerts, real time, user layouts, BigQuery / visitor-level GA4 joins, Google OAuth in admin UI.
+
 ### Later candidates
 
 **Contacts and contact groups**

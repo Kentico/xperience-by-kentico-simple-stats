@@ -11,11 +11,17 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.NewContacts;
 /// <param name="Identified">New contacts with an email address in the range.</param>
 /// <param name="Anonymous">New contacts without an email address in the range.</param>
 /// <param name="IdentifiedShare">Share of identified contacts (0-1). 0 when there are no new contacts.</param>
+/// <param name="TotalComparison">New contacts (identified + anonymous) compared with the previous period of the same length.</param>
+/// <param name="IdentifiedComparison"><paramref name="Identified"/> compared with the previous period of the same length.</param>
+/// <param name="AnonymousComparison"><paramref name="Anonymous"/> compared with the previous period of the same length.</param>
 public sealed record NewContactsResult(
     StatsTimeSeriesResult Trend,
     int Identified,
     int Anonymous,
-    double IdentifiedShare);
+    double IdentifiedShare,
+    StatsComparison TotalComparison,
+    StatsComparison IdentifiedComparison,
+    StatsComparison AnonymousComparison);
 
 /// <summary>
 /// Contacts created on one day, as returned by the SQL aggregate.

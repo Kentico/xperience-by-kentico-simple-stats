@@ -12,6 +12,7 @@ namespace Kentico.Xperience.Labs.SimpleStats.Admin.Reports.ActivityCounts;
 /// <param name="Periods">Continuous period axis.</param>
 /// <param name="Series">One series per activity type, sorted by total (descending). Values align with <paramref name="Periods"/>.</param>
 /// <param name="Total">Sum of all activities in the range.</param>
+/// <param name="TotalComparison"><paramref name="Total"/> compared with the previous period of the same length (same channel filter).</param>
 public sealed record ActivityCountsResult(
     DateOnly From,
     DateOnly To,
@@ -19,7 +20,8 @@ public sealed record ActivityCountsResult(
     int? ChannelId,
     IReadOnlyList<StatsPeriod> Periods,
     IReadOnlyList<ActivityCountsSeries> Series,
-    int Total)
+    int Total,
+    StatsComparison TotalComparison)
 {
     /// <summary>
     /// When the counts were read from the database. Can be older than the request when served from cache.

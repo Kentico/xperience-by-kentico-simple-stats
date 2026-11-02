@@ -24,6 +24,15 @@ public class ActivityCountsServiceTests
     }
 
     [Test]
+    public async Task GetReport_ReadsPreviousPeriodAndRange()
+    {
+        await service.GetReport(query, refresh: false, CancellationToken.None);
+
+        // Sep 1–3: the previous period starts Aug 29.
+        Assert.That(repository.LastRange, Is.EqualTo((new DateOnly(2026, 8, 29), query.To)));
+    }
+
+    [Test]
     public async Task GetReport_UsesCachedCounts_WhenNotRefreshing()
     {
         var first = await service.GetReport(query, refresh: false, CancellationToken.None);
@@ -102,9 +111,12 @@ public class ActivityCountsServiceTests
 
         public int DisplayNamesCalls { get; private set; }
 
+        public (DateOnly From, DateOnly To)? LastRange { get; private set; }
+
         public Task<IReadOnlyList<ActivityDailyCount>> GetDailyCounts(DateOnly from, DateOnly to, int? channelId, CancellationToken cancellationToken)
         {
             DailyCountsCalls++;
+            LastRange = (from, to);
             return Task.FromResult(Rows);
         }
 

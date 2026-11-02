@@ -112,4 +112,29 @@ public class ActivityCountsReportBuilderTests
             Assert.That(result.ChannelId, Is.EqualTo(5));
         });
     }
+
+    [Test]
+    public void Build_ComparesTotalWithPreviousPeriod_PreviousTypesNotInSeries()
+    {
+        // Sep 4–6; previous period Sep 1–3.
+        var query = new StatsQuery(new(2026, 9, 4), new(2026, 9, 6), StatsGrouping.Day, null);
+        ActivityDailyCount[] rows =
+        [
+            new("pagevisit", new(2026, 8, 31), 50),
+            new("pagevisit", new(2026, 9, 2), 2),
+            new("bizformsubmit", new(2026, 9, 3), 2),
+            new("pagevisit", new(2026, 9, 5), 6),
+        ];
+
+        var result = ActivityCountsReportBuilder.Build(query, rows, displayNames);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Series.Select(s => s.ActivityType), Is.EqualTo(new[] { "pagevisit" }));
+            Assert.That(result.Total, Is.EqualTo(6));
+            Assert.That(result.TotalComparison.Current, Is.EqualTo(6));
+            Assert.That(result.TotalComparison.Previous, Is.EqualTo(4));
+            Assert.That(result.TotalComparison.Change, Is.EqualTo(0.5).Within(1e-9));
+        });
+    }
 }

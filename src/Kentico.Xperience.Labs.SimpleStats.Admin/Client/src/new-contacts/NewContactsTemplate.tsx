@@ -1,10 +1,10 @@
-import { InfoCard } from '@kentico/xperience-admin-components';
 import React, { useMemo, useState } from 'react';
 
+import { ComparisonInfoCard } from '../shared/ComparisonInfoCard';
 import { toShareCsv, toTimeSeriesCsv } from '../shared/csv';
 import { DataRetentionNote } from '../shared/DataRetentionNote';
 import { DonutChart } from '../shared/DonutChart';
-import { formatShare, numberFormat } from '../shared/format';
+import { formatShare } from '../shared/format';
 import { ShareTable } from '../shared/ShareTable';
 import { StackedColumnChart } from '../shared/StackedColumnChart';
 import { StatsFilterBar } from '../shared/StatsFilterBar';
@@ -12,6 +12,7 @@ import { StatsTile } from '../shared/StatsTile';
 import { toStatsSeries } from '../shared/timeSeries';
 import { TimeSeriesTable } from '../shared/TimeSeriesTable';
 import {
+  StatsComparison,
   StatsFilter,
   StatsSeries,
   StatsShareSlice,
@@ -29,6 +30,10 @@ interface NewContactsResult {
   readonly anonymous: number;
   /** Share of identified contacts (0–1). */
   readonly identifiedShare: number;
+  /** New contacts vs the previous period of the same length. */
+  readonly totalComparison: StatsComparison;
+  readonly identifiedComparison: StatsComparison;
+  readonly anonymousComparison: StatsComparison;
 }
 
 /** Mirrors `NewContactsClientProperties`. */
@@ -108,23 +113,23 @@ export const NewContactsTemplate = (props: NewContactsTemplateProps) => {
       />
 
       <div className="SimpleStats-kpis">
-        <InfoCard
+        <ComparisonInfoCard
           caption="New contacts"
-          tooltip="Contacts created in the selected range that still exist."
-          text={numberFormat.format(total)}
-          details={rangeText}
+          tooltip={`Contacts created in the selected range (${rangeText}) that still exist.`}
+          comparison={report.totalComparison}
+          noun="new contacts"
         />
-        <InfoCard
+        <ComparisonInfoCard
           caption="Identified"
-          tooltip={identifiedHint}
-          text={numberFormat.format(report.identified)}
-          details={isEmpty ? 'No new contacts' : `${formatShare(report.identifiedShare)} of new contacts`}
+          tooltip={`${identifiedHint} ${isEmpty ? 'No new contacts.' : `${formatShare(report.identifiedShare)} of new contacts.`}`}
+          comparison={report.identifiedComparison}
+          noun="identified contacts"
         />
-        <InfoCard
+        <ComparisonInfoCard
           caption="Anonymous"
-          tooltip={identifiedHint}
-          text={numberFormat.format(report.anonymous)}
-          details={isEmpty ? 'No new contacts' : `${formatShare(anonymousShare)} of new contacts`}
+          tooltip={`${identifiedHint} ${isEmpty ? 'No new contacts.' : `${formatShare(anonymousShare)} of new contacts.`}`}
+          comparison={report.anonymousComparison}
+          noun="anonymous contacts"
         />
       </div>
 
