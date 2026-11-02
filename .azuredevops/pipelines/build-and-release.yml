@@ -102,8 +102,8 @@ stages:
             parameters:
               Configuration: $(Configuration)
               artifacts:
-                - Core:
-                  artifactName: "Kentico.Xperience.Labs.SimpleStats.Admin"
+                - Admin:
+                  artifactName: "Kentico-Xperience-Labs-SimpleStats-Admin"
                   projectPath: "src/Kentico.Xperience.Labs.SimpleStats.Admin"
 
   - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:

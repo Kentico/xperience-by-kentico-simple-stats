@@ -1,9 +1,11 @@
 ---
 name: design-conventions
-description: Design guidance for this project — color tokens, typography, grid and layout, imagery, voice and writing conventions, and the Tailwind CSS styles workflow. Use when working on UI, styling, layout, widgets or components with a visual surface, writing user-facing copy, or answering design questions.
+description: Design guidance for the DancingGoat sample site (examples/DancingGoat) — color tokens, typography, grid and layout, imagery, voice and writing conventions, and the Tailwind CSS styles workflow. Use when working on DancingGoat UI, styling, layout, widgets or components with a visual surface, writing its user-facing copy, or answering its design questions.
 ---
 
 # Design conventions
+
+Paths below are relative to `examples/DancingGoat/`; run `npm` commands from that folder.
 
 ## Design direction
 

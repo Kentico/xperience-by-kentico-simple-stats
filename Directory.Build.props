@@ -30,11 +30,14 @@
     <CopyDocumentationFilesFromPackages>true</CopyDocumentationFilesFromPackages>
     <CopyDebugSymbolFilesFromPackages>true</CopyDebugSymbolFilesFromPackages>
     <NoWarn>$(NoWarn);1591</NoWarn>
-    <RootNamespace>Kentico.Xperience.Labs.SimpleStats.Admin</RootNamespace>
 
     <!-- Set to false to manually control embedded assets in the assembly -->
     <!-- This can impact things like embedded localization .resx files -->
     <EnableDefaultEmbeddedResourceItems>true</EnableDefaultEmbeddedResourceItems>
+
+    <!-- This ensures Lucene index file modifications do not cause a hot reload when using dotnet watch -->
+    <!-- See https://github.com/dotnet/sdk/issues/44910#issuecomment-3533124997 -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);**/App_Data/**/*;**/$Storage*/**/*;**/node_modules/**/*;package-lock.json;**/*.lscache*</DefaultItemExcludes>
   </PropertyGroup>
 
   <PropertyGroup Condition=" $(Configuration) == 'Release' ">
