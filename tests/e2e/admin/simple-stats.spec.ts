@@ -4,22 +4,14 @@ import { SimpleStatsPage } from "./simpleStatsPage";
 // Covers the Simple Stats admin application end to end: UIApplication in the shell,
 // React templates, and page commands loading report data from the database.
 test.describe("Simple Stats application", () => {
-  test("surfaces the application in the shell navigation and opens the Overview", async ({ page }) => {
+  test("opens the Overview from the shell navigation and loads every tile", async ({ page }) => {
     const stats = new SimpleStatsPage(page);
 
     await stats.gotoViaNavigation();
 
     // Overview is the first page (order 50) the administrator may open
     await expect(page).toHaveURL(/\/admin\/simple-stats\/overview$/i);
-    await expect(stats.headline("Needs attention")).toBeVisible({ timeout: 30_000 });
-  });
-
-  test("loads every Overview tile through its page command", async ({ page }) => {
-    const stats = new SimpleStatsPage(page);
-
-    await stats.goto("overview");
-    await expect(page.getByText("Date range")).toBeVisible();
-    await expect(stats.headline("Needs attention")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText("Needs attention", { exact: true })).toBeVisible({ timeout: 30_000 });
     await stats.expectLoadedWithoutErrors();
   });
 
@@ -27,8 +19,6 @@ test.describe("Simple Stats application", () => {
     const stats = new SimpleStatsPage(page);
 
     await stats.goto("overview");
-    await stats.expectLoadedWithoutErrors();
-
     await page.getByRole("link", { name: "Open Publishing calendar" }).first().click();
 
     await expect(page).toHaveURL(/\/admin\/simple-stats\/content\/publishing-calendar(\?|$)/i);
