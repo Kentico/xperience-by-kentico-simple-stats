@@ -126,11 +126,11 @@
       },
       "CommunityToolkit.Aspire.Hosting.MailPit": {
         "type": "Direct",
-        "requested": "[13.6.0, )",
-        "resolved": "13.6.0",
-        "contentHash": "rPNt0roeZQNwOx3m/SyrjYy+HowFIQh43no9f7f9dNYmQo8e9erkSLtFtoA36OM38MLxXiSPpza+V4TDEQXA4A==",
+        "requested": "[13.6.1, )",
+        "resolved": "13.6.1",
+        "contentHash": "vX+bmgc0GmseZD9GcqqGhqFSheuIYVfSG9AnXjQkmzkKbPuxfbBOqj/+bkUF9lnzVWiQiyjM2Y+78iytcwizDw==",
         "dependencies": {
-          "Aspire.Hosting": "13.6.0"
+          "Aspire.Hosting": "13.6.4"
         }
       },
       "SonarAnalyzer.CSharp": {
