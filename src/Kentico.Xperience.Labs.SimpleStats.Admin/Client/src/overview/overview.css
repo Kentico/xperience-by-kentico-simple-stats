@@ -1,0 +1,113 @@
+/* Overview page. Uses the tokens of shared/stats.css (scoped to .SimpleStats-root) and admin color tokens. */
+
+.SimpleStats-overviewList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.SimpleStats-overviewListRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs) var(--spacing-m);
+  padding: var(--spacing-s) 0;
+  border-bottom: 1px solid var(--color-border-default);
+  font-size: var(--font-size-m);
+  line-height: var(--line-l);
+  color: var(--color-text-default-on-light);
+}
+
+.SimpleStats-overviewListRow:last-child {
+  border-bottom: none;
+}
+
+/* Short tables (Coming up, Recently published, Forms): rows share column widths. */
+.SimpleStats-overviewTable {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) minmax(0, max-content);
+  column-gap: var(--spacing-m);
+}
+
+.SimpleStats-overviewTable > .SimpleStats-overviewListRow {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+.SimpleStats-overviewTable .SimpleStats-overviewListDate {
+  min-width: 0;
+}
+
+.SimpleStats-overviewTable .SimpleStats-overviewListText {
+  min-width: 0;
+  justify-self: start;
+  text-align: left;
+}
+
+.SimpleStats-overviewTable .SimpleStats-overviewListText > * {
+  justify-content: flex-start;
+  text-align: left;
+  max-width: 100%;
+}
+
+.SimpleStats-overviewTable .SimpleStats-overviewListDetail {
+  min-width: 0;
+  text-align: right;
+}
+
+.SimpleStats-overviewStatus {
+  flex: 0 0 96px;
+}
+
+.SimpleStats-overviewListDate {
+  flex: 0 0 auto;
+  min-width: 140px;
+  color: var(--color-text-low-emphasis);
+  white-space: nowrap;
+}
+
+.SimpleStats-overviewListText {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.SimpleStats-overviewListDetail,
+.SimpleStats-overviewMore {
+  font-size: var(--font-size-s);
+  line-height: var(--line-m);
+  color: var(--color-text-low-emphasis);
+}
+
+.SimpleStats-overviewMore {
+  margin: var(--spacing-s) 0 0;
+}
+
+.SimpleStats-overviewListAction {
+  flex: 0 0 auto;
+}
+
+.SimpleStats-overviewLoading {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-xl) 0;
+}
+
+.SimpleStats-overviewSummary {
+  margin: 0;
+  font-family: var(--typeface-product-primary);
+  font-weight: var(--weight-medium);
+  font-size: var(--font-size-m);
+  line-height: var(--line-l);
+  color: var(--color-text-default-on-light);
+}
+
+.SimpleStats-overviewSubhead {
+  margin: var(--spacing-l) 0 var(--spacing-xs);
+  font-family: var(--typeface-product-primary);
+  font-weight: var(--weight-medium);
+  font-size: var(--font-size-m);
+  line-height: var(--line-l);
+  color: var(--color-text-default-on-light);
+}

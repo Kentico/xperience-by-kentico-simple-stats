@@ -22,11 +22,12 @@ public class NewContactsServiceTests
     }
 
     [Test]
-    public async Task GetReport_PassesRangeToRepository()
+    public async Task GetReport_PassesPreviousPeriodAndRangeToRepository()
     {
         await service.GetReport(query, refresh: false, CancellationToken.None);
 
-        Assert.That(repository.LastCall, Is.EqualTo((query.From, query.To)));
+        // Sep 1–30 (30 days): the previous period starts Aug 2.
+        Assert.That(repository.LastCall, Is.EqualTo((new DateOnly(2026, 8, 2), query.To)));
     }
 
     [Test]

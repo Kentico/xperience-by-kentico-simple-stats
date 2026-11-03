@@ -28,7 +28,7 @@ public sealed class EmailSummaryPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<EmailSummaryClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/EmailSummary";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/EmailSummary";
 
     private static readonly ChannelType[] channelTypes = [ChannelType.Email];
 

@@ -24,7 +24,7 @@ public sealed class RecipientListsPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<RecipientListsClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/RecipientLists";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/RecipientLists";
 
     private readonly IRecipientListsService recipientListsService = recipientListsService;
     private readonly IPageLinkGenerator pageLinkGenerator = pageLinkGenerator;

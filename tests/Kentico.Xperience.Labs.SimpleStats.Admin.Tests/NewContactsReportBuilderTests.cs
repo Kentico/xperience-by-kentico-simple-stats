@@ -86,6 +86,49 @@ public class NewContactsReportBuilderTests
     }
 
     [Test]
+    public void Build_ComparesWithPreviousPeriod_RowsBeforeRangeNotInTrend()
+    {
+        // Sep 4–6; previous period Sep 1–3.
+        var query = new StatsQuery(new(2026, 9, 4), new(2026, 9, 6), StatsGrouping.Day, null);
+        NewContactsDailyCount[] rows =
+        [
+            new(new(2026, 8, 31), 9, 9),
+            new(new(2026, 9, 1), 2, 2),
+            new(new(2026, 9, 3), 0, 2),
+            new(new(2026, 9, 5), 3, 1),
+        ];
+
+        var result = NewContactsReportBuilder.Build(query, rows);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Trend.Total, Is.EqualTo(4));
+            Assert.That(result.TotalComparison.Current, Is.EqualTo(4));
+            Assert.That(result.TotalComparison.Previous, Is.EqualTo(6));
+            Assert.That(result.TotalComparison.Change, Is.EqualTo(-2.0 / 6).Within(1e-9));
+            Assert.That(result.TotalComparison.PreviousFrom, Is.EqualTo(new DateOnly(2026, 9, 1)));
+            Assert.That(result.TotalComparison.PreviousTo, Is.EqualTo(new DateOnly(2026, 9, 3)));
+            Assert.That((result.IdentifiedComparison.Current, result.IdentifiedComparison.Previous), Is.EqualTo((3, 2)));
+            Assert.That((result.AnonymousComparison.Current, result.AnonymousComparison.Previous), Is.EqualTo((1, 4)));
+        });
+    }
+
+    [Test]
+    public void Build_NoPreviousContacts_ChangeIsNull()
+    {
+        var query = new StatsQuery(new(2026, 9, 4), new(2026, 9, 6), StatsGrouping.Day, null);
+
+        var result = NewContactsReportBuilder.Build(query, [new(new(2026, 9, 5), 1, 0)]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.TotalComparison.Previous, Is.Zero);
+            Assert.That(result.TotalComparison.Change, Is.Null);
+            Assert.That(result.AnonymousComparison.Change, Is.Null);
+        });
+    }
+
+    [Test]
     public void Build_OnlyAnonymous_ShareIsZero()
     {
         var query = new StatsQuery(new(2026, 9, 1), new(2026, 9, 1), StatsGrouping.Day, null);

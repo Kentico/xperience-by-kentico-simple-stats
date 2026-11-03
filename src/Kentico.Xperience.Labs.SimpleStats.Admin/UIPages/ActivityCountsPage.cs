@@ -25,7 +25,7 @@ public sealed class ActivityCountsPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<ActivityCountsClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/ActivityCounts";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/ActivityCounts";
 
     private readonly IActivityCountsService activityCountsService = activityCountsService;
     private readonly IStatsChannelOptionsProvider channelOptionsProvider = channelOptionsProvider;

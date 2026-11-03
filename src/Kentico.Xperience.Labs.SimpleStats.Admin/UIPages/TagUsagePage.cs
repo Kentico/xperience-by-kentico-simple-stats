@@ -24,7 +24,7 @@ public sealed class TagUsagePage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<TagUsageClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/TagUsage";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/TagUsage";
 
     private readonly ITagUsageService tagUsageService = tagUsageService;
     private readonly IPageLinkGenerator pageLinkGenerator = pageLinkGenerator;

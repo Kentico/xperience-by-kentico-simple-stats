@@ -2,15 +2,12 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "type": "process",
-      "command": "npm",
-      "args": ["install"],
-      "options": {
-        "cwd": "${workspaceFolder}/src/Kentico.Xperience.Labs.SimpleStats.Admin/Client"
-      },
+      "type": "npm",
+      "script": "install",
+      "path": "src/Kentico.Xperience.Labs.SimpleStats.Admin/Client",
       "group": "build",
       "problemMatcher": [],
-      "label": "npm: install - Admin/Client",
+      "label": "npm: install - admin client",
       "detail": "install dependencies from package"
     },
     {
@@ -25,9 +22,7 @@
       "command": "dotnet",
       "args": [
         "format",
-        "Kentico.Xperience.Labs.SimpleStats.slnx",
-        "--exclude",
-        "./examples/**"
+        "Kentico.Xperience.Labs.SimpleStats.slnx"
       ],
       "problemMatcher": ["$msCompile"],
       "group": "none",
@@ -41,38 +36,29 @@
       "label": "dotnet: clean"
     },
     {
-      "type": "process",
-      "command": "npm",
-      "args": ["run", "build"],
-      "options": {
-        "cwd": "${workspaceFolder}/src/Kentico.Xperience.Labs.SimpleStats.Admin/Client"
-      },
+      "type": "npm",
+      "script": "build",
+      "path": "src/Kentico.Xperience.Labs.SimpleStats.Admin/Client",
       "group": "build",
       "problemMatcher": [],
-      "label": "npm: build - Admin/Client",
+      "label": "npm: build - admin client",
       "detail": "webpack --mode=production"
     },
     {
-      "type": "process",
-      "command": "npm",
-      "args": ["run", "build:dev"],
-      "options": {
-        "cwd": "${workspaceFolder}/src/Kentico.Xperience.Labs.SimpleStats.Admin/Client"
-      },
+      "type": "npm",
+      "script": "build:dev",
+      "path": "src/Kentico.Xperience.Labs.SimpleStats.Admin/Client",
       "group": "build",
       "problemMatcher": [],
-      "label": "npm: build:dev - Admin/Client",
+      "label": "npm: build:dev - admin client",
       "detail": "webpack --mode=development"
     },
     {
-      "type": "process",
-      "command": "npm",
-      "args": ["run", "start"],
-      "options": {
-        "cwd": "${workspaceFolder}/src/Kentico.Xperience.Labs.SimpleStats.Admin/Client"
-      },
+      "type": "npm",
+      "script": "start",
+      "path": "src/Kentico.Xperience.Labs.SimpleStats.Admin/Client",
       "problemMatcher": [],
-      "label": "npm: watch - Admin/Client",
+      "label": "npm: watch - admin client",
       "detail": "webpack serve --mode development"
     },
     {

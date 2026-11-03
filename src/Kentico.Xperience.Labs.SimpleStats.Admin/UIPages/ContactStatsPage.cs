@@ -35,7 +35,7 @@ internal sealed class ContactStatsPage(
     /// </summary>
     public const string NAME = "Stats (Labs)";
 
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/ContactStats";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/ContactStats";
 
     /// <summary>
     /// After the product tabs on <see cref="ContactEditSection"/> (Overview 100, Activities 200, Automation 300).

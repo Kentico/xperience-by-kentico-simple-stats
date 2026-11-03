@@ -1,12 +1,18 @@
 namespace Kentico.Xperience.Labs.SimpleStats.Admin.UIPages;
 
 /// <summary>
-/// Custom permissions of the "Simple Stats (Labs)" application: one per report page, plus <see cref="EXPORT"/>.
+/// Custom permissions of the "Simple Stats (Labs)" application: <see cref="OVERVIEW"/>, one per report page, plus <see cref="EXPORT"/>.
 /// Names are stored in role assignments, so do not change them.
 /// </summary>
 public static class StatsPermissions
 {
     private const string PREFIX = "SimpleStats.";
+
+    /// <summary>
+    /// Opens the Overview page. Each Overview tile also needs the permission of its source report.
+    /// </summary>
+    public const string OVERVIEW = PREFIX + "Overview";
+    public const string OVERVIEW_DISPLAY_NAME = "Overview";
 
     public const string ACTIVITY_COUNTS = PREFIX + "ActivityCounts";
     public const string ACTIVITY_COUNTS_DISPLAY_NAME = "Activity counts";

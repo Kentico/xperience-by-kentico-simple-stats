@@ -52,7 +52,7 @@ internal sealed class SimpleStatsWebAdminModule : AdminModule
     {
         base.OnInit();
 
-        RegisterClientModule("kentico", "xperience-admin-labs-simple-stats");
+        RegisterClientModule("kentico", "xperience-labs-simple-stats-admin");
     }
 
     internal static void RegisterServices(IServiceCollection services)

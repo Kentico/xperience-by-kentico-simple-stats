@@ -11,10 +11,11 @@ The library adds the **Simple Stats (Labs)** application to the **Digital market
 
 ## Navigation
 
-Reports are grouped into sections. Opening the application or a section opens its first report the role may see.
+The **Overview** page comes first, above the sections. Reports are grouped into sections. Opening the application opens the Overview when the role has the **Overview** permission, else the first report the role may see. Opening a section opens its first report the role may see.
 
 | Section  | Reports                                                                                                                                                                 |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Overview | Overview (one page, not a section; see [Overview](#overview))                                                                                                           |
 | Contacts | Activity counts, Top pages, Campaign sources, New contacts, Form submissions, Member registrations, Consents                                                            |
 | Emails   | Email summary, Recipient lists                                                                                                                                          |
 | Content  | Content inventory, Publishing calendar, Content locks, Page freshness, Reusable content usage, Publishing activity, Translation status, Editor contributions, Tag usage |
@@ -28,11 +29,13 @@ Sections have no permission of their own. A section is hidden when the role has 
 - Administrators see the application and all reports by default.
 - For other roles, open **Role management**, select the role, and edit its permissions for **Simple Stats (Labs)**:
   - **View** - opens the application.
+  - **Overview** - opens the Overview page. Each part of the Overview also needs the permission of the report it comes from (for example **Form submissions** for the forms part). A role with only **Overview** sees a message that report permissions are needed.
   - One permission per report. The role sees only the reports it has a permission for. Other reports are hidden from the navigation and return an error if opened by URL.
   - **Export** - shows the **Export CSV** buttons in all reports the role can see. Without it, the buttons are hidden.
 
 | Permission             | Code name                         |
 | ---------------------- | --------------------------------- |
+| Overview               | `SimpleStats.Overview`            |
 | Activity counts        | `SimpleStats.ActivityCounts`      |
 | Top pages              | `SimpleStats.TopPages`            |
 | Campaign sources       | `SimpleStats.CampaignSources`     |
@@ -62,11 +65,35 @@ The **Export** permission only hides the buttons. The CSV is built in the browse
 
 ## Reports
 
+### Overview
+
+One page that answers "what needs my attention, what is coming up, what happened and is it working?" in a few seconds. It summarizes other reports; each part links to the full report for the details. It has no queries of its own, so its numbers match the full reports for the same range (the reports' default filters: all channels, all kinds, all order statuses, all event types).
+
+- **Date range** - last 7, 14 or 30 days (default 7), ending today. Counts over the range show the change vs the previous period of the same length.
+- **Refresh** - reloads all parts from the database. **Updated** shows the oldest data time of the loaded parts; each part shows its own.
+- **Parts** load on their own, so a slow or failing part does not block the others. A part is shown only when the role has the permission of its source report.
+  - **Needs attention** - problems first, then items to check, each with a link to the report:
+    - items in a workflow step for more than 14 days (Content inventory; the days are based on the last change of the item, because the time an item entered its step is not stored),
+    - published items with unpublished changes older than 14 days (Content inventory),
+    - content locks older than 3 days (Content locks; only when content locking is on),
+    - pages not changed in 12 months that had visits in the range (Page freshness),
+    - more errors in the event log than in the previous period, and at least 5 (Event log; shown as a problem).
+  - **Summary** - one sentence built from the loaded numbers, for example "Last 7 days: 14 items published, 2 emails sent, form submissions up 18%." Parts the role cannot see or that are not set up are left out.
+  - **KPIs** - published in the last 7 days, form submissions, new contacts, new members, email click rate, revenue, errors and tracked activities. Members, emails and commerce are hidden when they are not set up in the project (a note lists them).
+  - **Coming up** - scheduled publishes, unpublishes and email sends in the next 7 days (up to 5; Publishing calendar).
+  - **Recently published** - up to 5 items published in the last 7 days. This is a fixed 7-day window of the Publishing calendar, not the selected range.
+  - **Emails** - emails sent, open rate and click rate, and the best and worst email by click rate (Email summary).
+  - **Forms** - the 3 forms with the most submissions (Form submissions).
+  - **System** - errors and warnings with the change vs the previous period (Event log).
+- No CSV export: every part links to a report that has one.
+
+Tracked activities count only contacts who consented to tracking, and cleanup tasks delete old activities. The event log keeps a limited number of events. All times are server time.
+
 ### Activity counts
 
 Shows contact activities per activity type over time as a stacked column chart.
 
-- **KPIs** - total activities, top activity type, and number of activity types in the range.
+- **KPIs** - total activities (with the change vs the previous period of the same length), top activity type, and number of activity types in the range.
 - **Filters**
   - **Date range** - last 7, 30 or 90 days, or a custom range (up to about 5 years).
   - **Group by** - day, week (weeks start on Monday) or month.
@@ -167,7 +194,7 @@ The tab requires the **Contact stats** permission of **Simple Stats (Labs)** (on
 Shows contacts created per period, stacked by identified and anonymous, and the share of each.
 
 - **Identified** - the contact has an email address. **Anonymous** - no email address (for example, a site visitor who has not submitted a form).
-- **KPIs** - new contacts in the range, identified (count and share) and anonymous (count and share).
+- **KPIs** - new contacts in the range, identified and anonymous, each with the change vs the previous period of the same length. The tooltips show the identified and anonymous shares.
 - **Filters** - date range and grouping (no channel; contacts have no channel).
 - **Tiles** - "New contacts over time" (stacked column chart or table) and "Identified vs anonymous" (donut chart or table). Each has its own CSV export.
 

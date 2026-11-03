@@ -1,6 +1,7 @@
 import { InfoCard } from '@kentico/xperience-admin-components';
 import React, { useMemo, useState } from 'react';
 
+import { ComparisonInfoCard } from '../shared/ComparisonInfoCard';
 import { toTimeSeriesCsv } from '../shared/csv';
 import { DataRetentionNote } from '../shared/DataRetentionNote';
 import { numberFormat } from '../shared/format';
@@ -10,6 +11,7 @@ import { StatsTile } from '../shared/StatsTile';
 import { TimeSeriesTable } from '../shared/TimeSeriesTable';
 import {
   StatsChannelOption,
+  StatsComparison,
   StatsFilter,
   StatsGrouping,
   StatsPeriod,
@@ -36,6 +38,8 @@ interface ActivityCountsResult {
   readonly periods: readonly StatsPeriod[];
   readonly series: readonly ActivityCountsSeries[];
   readonly total: number;
+  /** `total` vs the previous period of the same length. */
+  readonly totalComparison: StatsComparison;
   /** ISO timestamp of when the counts were read from the database. */
   readonly updatedAt: string;
 }
@@ -105,11 +109,11 @@ export const ActivityCountsTemplate = (props: ActivityCountsTemplateProps) => {
       />
 
       <div className="SimpleStats-kpis">
-        <InfoCard
+        <ComparisonInfoCard
           caption="Total activities"
-          tooltip="All logged contact activities in the selected range and channel."
-          text={numberFormat.format(report.total)}
-          details={rangeText}
+          tooltip={`All logged contact activities in the selected range (${rangeText}) and channel.`}
+          comparison={report.totalComparison}
+          noun="activities"
         />
         <InfoCard
           caption="Top activity type"

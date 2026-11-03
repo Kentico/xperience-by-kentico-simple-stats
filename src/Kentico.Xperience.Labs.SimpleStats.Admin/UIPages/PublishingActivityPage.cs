@@ -26,7 +26,7 @@ public sealed class PublishingActivityPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<PublishingActivityClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/PublishingActivity";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/PublishingActivity";
 
     private readonly IPublishingActivityService publishingActivityService = publishingActivityService;
     private readonly IStatsChannelOptionsProvider channelOptionsProvider = channelOptionsProvider;

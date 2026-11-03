@@ -25,7 +25,7 @@ public sealed class FormSubmissionsPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<FormSubmissionsClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/FormSubmissions";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/FormSubmissions";
 
     private readonly IFormSubmissionsService formSubmissionsService = formSubmissionsService;
     private readonly IPageLinkGenerator pageLinkGenerator = pageLinkGenerator;

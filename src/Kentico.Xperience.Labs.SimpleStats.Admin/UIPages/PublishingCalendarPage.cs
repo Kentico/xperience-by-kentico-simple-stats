@@ -25,7 +25,7 @@ public sealed class PublishingCalendarPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<PublishingCalendarClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/PublishingCalendar";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/PublishingCalendar";
 
     private readonly IPublishingCalendarService publishingCalendarService = publishingCalendarService;
     private readonly IStatsChannelOptionsProvider channelOptionsProvider = channelOptionsProvider;

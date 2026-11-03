@@ -34,7 +34,11 @@ internal sealed class NewContactsService(
         // Contacts have no channel, so the channel is dropped and does not split the cache key.
         var contactsQuery = query with { ChannelId = null };
 
+        // One query reads the previous period and the range; the builder splits the rows by date.
+        var (previousFrom, _) = StatsComparison.GetPreviousRange(contactsQuery);
+
         // Cache the daily aggregate (not the bucketed result) so switching grouping does not hit the database.
+        // The previous period is derived from the range, so the range alone is the key.
         var settings = StatsCache.CreateSettings(
             "new-contacts",
             contactsQuery.From.DayNumber,
@@ -45,7 +49,7 @@ internal sealed class NewContactsService(
             settings,
             refresh,
             async token => new NewContactsSnapshot(
-                await repository.GetDailyCounts(contactsQuery.From, contactsQuery.To, token),
+                await repository.GetDailyCounts(previousFrom, contactsQuery.To, token),
                 clock.GetUtcNow()),
             cancellationToken);
 

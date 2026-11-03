@@ -24,7 +24,7 @@ public sealed class EventLogPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<EventLogClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/EventLog";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/EventLog";
 
     private readonly IEventLogReportService eventLogReportService = eventLogReportService;
     private readonly IPageLinkGenerator pageLinkGenerator = pageLinkGenerator;

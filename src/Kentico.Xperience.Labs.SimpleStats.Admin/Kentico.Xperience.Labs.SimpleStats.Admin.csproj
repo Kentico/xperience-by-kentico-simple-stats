@@ -1,18 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <Title>Xperience by Kentico Labs: Simple Stats</Title>
-    <Description>Shows basic charts about Xperience by Kentico data in the administration.</Description>
     <AdminOrgName>kentico</AdminOrgName>
+    <RootNamespace>Kentico.Xperience.Labs.SimpleStats.Admin</RootNamespace>
+    <Product>Xperience by Kentico Labs: Simple Stats administration</Product>
+    <Title>$(Product)</Title>
+    <Description>Shows basic charts about Xperience by Kentico data in the administration.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Requires that npm run build or npm run build:dev was executed before the Debug .NET build. -->
+    <!-- Requires that npm run build or npm run build:dev was executed _before_ the .NET build -->
     <AdminClientPath Include="Client\dist\**" Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-      <ProjectName>xperience-admin-labs-simple-stats</ProjectName>
+      <ProjectName>xperience-labs-simple-stats-admin</ProjectName>
     </AdminClientPath>
   </ItemGroup>
 
@@ -31,7 +30,7 @@
 
     <ItemGroup>
       <AdminClientPath Include="Client\dist\**">
-        <ProjectName>xperience-admin-labs-simple-stats</ProjectName>
+        <ProjectName>xperience-labs-simple-stats-admin</ProjectName>
       </AdminClientPath>
     </ItemGroup>
   </Target>

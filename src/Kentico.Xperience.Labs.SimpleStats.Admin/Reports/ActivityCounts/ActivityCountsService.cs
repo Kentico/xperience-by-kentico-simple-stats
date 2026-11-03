@@ -36,7 +36,11 @@ internal sealed class ActivityCountsService(
 
     public async Task<ActivityCountsResult> GetReport(StatsQuery query, bool refresh, CancellationToken cancellationToken)
     {
+        // One query reads the previous period and the range; the builder splits the rows by date.
+        var (previousFrom, _) = StatsComparison.GetPreviousRange(query);
+
         // Cache the daily aggregate (not the bucketed result) so switching grouping does not hit the database.
+        // The previous period is derived from the range, so the range alone is the key.
         var dailyCountsSettings = StatsCache.CreateSettings(
             "activity-counts",
             query.From.DayNumber,
@@ -50,7 +54,7 @@ internal sealed class ActivityCountsService(
             dailyCountsSettings,
             refresh,
             async token => new ActivityDailyCountsSnapshot(
-                await repository.GetDailyCounts(query.From, query.To, query.ChannelId, token),
+                await repository.GetDailyCounts(previousFrom, query.To, query.ChannelId, token),
                 clock.GetUtcNow()),
             cancellationToken);
 

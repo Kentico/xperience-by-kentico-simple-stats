@@ -24,7 +24,7 @@ public sealed class ReusableUsagePage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<ReusableUsageClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/ReusableUsage";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/ReusableUsage";
 
     private readonly IReusableUsageService reusableUsageService = reusableUsageService;
     private readonly IPageLinkGenerator pageLinkGenerator = pageLinkGenerator;

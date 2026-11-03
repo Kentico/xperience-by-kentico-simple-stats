@@ -24,7 +24,7 @@ public sealed class NewContactsPage(
     IUIPermissionEvaluator permissionEvaluator,
     IStatsExportEventPublisher exportEventPublisher) : StatsReportPage<NewContactsClientProperties>(permissionEvaluator, exportEventPublisher)
 {
-    public const string TEMPLATE_NAME = "@kentico/xperience-admin-labs-simple-stats/NewContacts";
+    public const string TEMPLATE_NAME = "@kentico/xperience-labs-simple-stats-admin/NewContacts";
 
     private readonly INewContactsService newContactsService = newContactsService;
     private readonly TimeProvider clock = clock;
