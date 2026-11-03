@@ -10,12 +10,12 @@
       },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
-        "requested": "[17.14.0, )",
-        "resolved": "17.14.0",
-        "contentHash": "rTtdOm6C96q9QgP3mS8nUGPGPh5Xm2HnBYJggNmNrJ3LDmX9lJuUIgnJEfvX6wSQY4swUMiCcIXd3OkjhYCgtw==",
+        "requested": "[18.11.0, )",
+        "resolved": "18.11.0",
+        "contentHash": "xf/bR0LNkhK0SnadDRlZIQmC4sac5Wk0e1WAdiQjRN3MSo6gQ9M2c4c1XRNnVGjfOvckh704W5CJ19AL0/Xsdg==",
         "dependencies": {
-          "Microsoft.CodeCoverage": "17.14.0",
-          "Microsoft.TestPlatform.TestHost": "17.14.0"
+          "Microsoft.CodeCoverage": "18.11.0",
+          "Microsoft.TestPlatform.TestHost": "18.11.0"
         }
       },
       "NUnit": {
@@ -619,8 +619,8 @@
       },
       "Microsoft.CodeCoverage": {
         "type": "Transitive",
-        "resolved": "17.14.0",
-        "contentHash": "z2GYXGG6LjGoumT59xSB2dMnqSwQBjkxdDJmSJHwy5nPtZ435GXa6wj5hz/lRrAZ7NyXXxZNXVsiHXzHRru5eA=="
+        "resolved": "18.11.0",
+        "contentHash": "MhN9wpvL1Es4hfIYslrsVgIsUdDFxuOBTbAl9mGIMvFo8PP5CLf4DrGdNrfwWSyn0lqi6sssm+I/qkkLL3MU+g=="
       },
       "Microsoft.Data.SqlClient": {
         "type": "Transitive",
@@ -1010,16 +1010,15 @@
       },
       "Microsoft.TestPlatform.ObjectModel": {
         "type": "Transitive",
-        "resolved": "17.14.0",
-        "contentHash": "3h7y7f/HuY8jdZa163p/55VmGw/fYJwrI8FOtsp4aEQAJaPgBr5LBS25uOfBwRYI95QDiByfaqSPBcWEvuHEwA=="
+        "resolved": "18.11.0",
+        "contentHash": "BXBHYnwSOljKute8UYCMXOLAdB7awxEMppPSpqOF1ZxLD/W/OH+vTBgFaXA7q0aditJTVXSMVenel+wOkEIyNg=="
       },
       "Microsoft.TestPlatform.TestHost": {
         "type": "Transitive",
-        "resolved": "17.14.0",
-        "contentHash": "8htQBKM92s/NXUI/U0/CKKLlvlDfWIo3/mbnY/GS/2XLkBGNIVQufmUpDIzznaZqUpdzspGSsJcLhVN8aRoMaA==",
+        "resolved": "18.11.0",
+        "contentHash": "AKjwKpyRBwoQFQmpcchtoYlfJEBlaY/40uxBRi+qXP4NR7xT8t+XTJtOyEyumfvfJcH5pASs75LwNdXYRr4XNA==",
         "dependencies": {
-          "Microsoft.TestPlatform.ObjectModel": "17.14.0",
-          "Newtonsoft.Json": "13.0.3"
+          "Microsoft.TestPlatform.ObjectModel": "18.11.0"
         }
       },
       "MimeKit": {
